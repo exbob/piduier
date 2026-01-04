@@ -1,0 +1,26 @@
+---
+# 基于 LLVM 代码风格
+BasedOnStyle: LLVM
+
+# 使用制表符缩进（空格仅用于对齐）
+UseTab: ForIndentation
+TabWidth: 8
+IndentWidth: 8
+
+# 列限制（100 列）
+ColumnLimit: 100
+
+# Linux 内核大括号风格：函数定义大括号换行，其他不换行
+BreakBeforeBraces: Linux
+
+# 函数一律换行（禁止短函数单行）
+AllowShortFunctionsOnASingleLine: None
+
+# if 语句无论长短都换行
+AllowShortIfStatementsOnASingleLine: false
+
+# case 标签与 switch 对齐（不缩进）
+IndentCaseLabels: false
+
+# 其余保持 LLVM 默认
+

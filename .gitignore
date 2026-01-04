@@ -1,0 +1,23 @@
+# CMake 构建目录
+build/
+
+# Makefile 编译产物
+*.o
+server
+
+# CMake 缓存文件
+build/CMakeCache.txt
+build/CMakeFiles/
+build/cmake_install.cmake
+build/Makefile
+
+# 安装目录
+bin/
+
+# 编辑器文件
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
