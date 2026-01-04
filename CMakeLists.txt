@@ -26,3 +26,8 @@ install(TARGETS server
     RUNTIME DESTINATION bin
 )
 
+# 安装 index.html 到 bin/ 目录
+install(FILES index.html
+    DESTINATION bin
+)
+

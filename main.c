@@ -104,7 +104,7 @@ static void ev_handler(struct mg_connection *c, int ev, void *ev_data)
 		else if (mg_match(hm->uri, mg_str("/api/hello"), NULL)) {
 			mg_http_reply(c, 200, "", "{%m:%d}\n", MG_ESC("status"), 1);
 		}
-		// Serve static files
+		// Serve static files (index.html should be in the same directory as executable)
 		else {
 			struct mg_http_serve_opts opts = {.root_dir = ".", .fs = &mg_fs_posix};
 			mg_http_serve_dir(c, hm, &opts);
