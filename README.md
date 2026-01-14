@@ -1,6 +1,109 @@
-# Hostname 管理 Web 服务
+# 树莓派监控软件 (piduier)
 
-基于 Mongoose 的简单 HTTP 服务器，提供通过 Web 界面管理系统 hostname 的功能。
+基于 Mongoose 的树莓派监控软件，提供通过 Web 界面监控和管理树莓派的功能。
+
+## 系统环境配置
+
+### 1. 系统依赖安装
+
+安装必要的系统软件包：
+
+```bash
+sudo apt-get update
+sudo apt-get install -y \
+    libgpiod-dev \
+    network-manager \
+    build-essential \
+    cmake \
+    pkg-config
+```
+
+### 2. 硬件接口启用
+
+使用 `raspi-config` 启用硬件接口：
+
+```bash
+sudo raspi-config
+```
+
+在界面中启用：
+- **SPI**: `Interface Options` → `SPI` → `Enable`
+- **I2C**: `Interface Options` → `I2C` → `Enable`
+- **Serial Port**: `Interface Options` → `Serial Port` → `Enable`（用于 UART）
+
+或者使用命令行：
+
+```bash
+# 启用 SPI
+sudo raspi-config nonint do_spi 0
+
+# 启用 I2C
+sudo raspi-config nonint do_i2c 0
+
+# 启用串口（UART）
+sudo raspi-config nonint do_serial 0
+```
+
+### 3. 权限配置
+
+统一使用 `piduier` 用户组访问所有硬件接口：
+
+```bash
+# 1. 创建 piduier 组（如果不存在）
+sudo groupadd piduier
+
+# 2. 将用户添加到 piduier 组
+sudo usermod -aG piduier $USER
+
+# 3. 配置 udev 规则（统一使用 piduier 组）
+sudo tee /etc/udev/rules.d/99-piduier.rules > /dev/null <<EOF
+# GPIO
+SUBSYSTEM=="gpio", GROUP="piduier", MODE="0664"
+KERNEL=="gpiochip*", GROUP="piduier", MODE="0664"
+
+# PWM
+SUBSYSTEM=="pwm", GROUP="piduier", MODE="0664"
+KERNEL=="pwmchip*", GROUP="piduier", MODE="0664"
+
+# SPI
+KERNEL=="spidev*", GROUP="piduier", MODE="0664"
+
+# I2C
+KERNEL=="i2c-[0-9]*", GROUP="piduier", MODE="0664"
+
+# UART
+KERNEL=="ttyAMA*", GROUP="piduier", MODE="0664"
+EOF
+
+# 4. 重新加载 udev 规则
+sudo udevadm control --reload-rules
+sudo udevadm trigger
+
+# 5. 重新登录以使组权限生效
+# 或者使用: newgrp piduier
+```
+
+**验证权限**（重新登录后）：
+
+```bash
+# 检查用户组
+groups
+
+# 检查设备权限
+ls -l /dev/gpiochip0
+ls -l /dev/spidev0.0
+ls -l /dev/i2c-1
+ls -l /dev/ttyAMA0
+```
+
+### 4. NetworkManager 服务
+
+确保 NetworkManager 服务正在运行：
+
+```bash
+sudo systemctl status NetworkManager
+sudo systemctl enable NetworkManager
+```
 
 ## 编译
 
@@ -24,22 +127,45 @@ ARCH=arm64 ./build.sh
 ```
 
 **说明：**
-- CMake 生成的所有文件都放在 `./build` 目录下
-- 编译后的可执行文件会自动安装到 `./bin/`
+- CMake 生成的所有文件都放在 `./build` 目录下（中间文件，不需要部署）
+- 编译后的可执行文件和 Web 前端会自动安装到 `./bin/` 目录
 - 每次构建前会自动清理 build 目录，确保使用正确的编译器
+
+**编译产物**：
+```
+bin/
+├── piduier          # 可执行文件（主程序）
+└── web/             # Web 前端文件目录
+    ├── index.html
+    ├── css/
+    │   └── style.css
+    └── js/
+        └── app.js
+```
+
+**部署到树莓派**：只需要将 `bin/` 目录下的所有文件复制到树莓派即可。详细说明见 `docs/BUILD_AND_DEPLOY.md`
 
 ## 运行
 
-**注意**：修改 hostname 需要 root 权限，因此需要使用 `sudo` 运行，`index.html` 需要跟可执行文件在相同路径下。
+**注意**：
+- Web 文件（`index.html` 等）需要位于 `./bin/web/` 目录（构建脚本会自动安装）
+- 网络配置操作需要 root 权限，其他硬件操作使用 `piduier` 组权限
 
 ```bash
 # 使用 build.sh 编译后（可执行文件在 bin/ 目录）
-sudo ./bin/server
+# 如果已配置 piduier 组权限，可以直接运行：
+./bin/piduier
+
+# 如果需要网络配置功能，或开发测试时，可以使用 root 权限：
+sudo ./bin/piduier
 ```
+
+服务器默认监听 `http://0.0.0.0:8000`
 
 ## 使用
 
-1. 启动服务器后，在浏览器中访问：`http://localhost:8000`
-2. 点击"读取"按钮获取当前 hostname
-3. 在输入框中修改 hostname
-4. 点击"保存"按钮应用更改
+1. 启动服务器后，在浏览器中访问：`http://<树莓派IP>:8000`
+2. 通过 Web 界面监控和管理树莓派：
+   - **监控面板**: 查看系统信息、CPU/内存使用率、网络状态等
+   - **网络设置**: 配置以太网和 Wi-Fi
+   - **HAT-40Pin**: 控制 GPIO、PWM、SPI、I2C、UART 等硬件接口

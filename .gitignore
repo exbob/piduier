@@ -14,6 +14,10 @@ build/Makefile
 # 安装目录
 bin/
 
+# 可执行文件名称
+piduier
+server
+
 # 编辑器文件
 .vscode/
 .idea/

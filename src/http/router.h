@@ -1,0 +1,9 @@
+#ifndef ROUTER_H
+#define ROUTER_H
+
+#include "mongoose.h"
+
+// 处理 HTTP 请求路由
+void router_handle_request(struct mg_connection *c, struct mg_http_message *hm);
+
+#endif // ROUTER_H

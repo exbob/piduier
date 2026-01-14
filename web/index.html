@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PiDuier - RPi Monitor Control Panel</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <!-- 主布局容器 -->
+    <div class="main-container">
+        <!-- 侧边栏 -->
+        <aside class="sidebar">
+            <div class="sidebar-logo">
+                <div class="logo-content">
+                    <svg class="logo-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <circle cx="12" cy="12" r="6"></circle>
+                        <circle cx="12" cy="12" r="2"></circle>
+                        <path d="M12 2v4M12 18v4M2 12h4M18 12h4"></path>
+                        <path d="M6.34 6.34l2.83 2.83M14.83 14.83l2.83 2.83M6.34 17.66l2.83-2.83M14.83 9.17l2.83-2.83"></path>
+                    </svg>
+                    <div class="logo-text">PiDuier</div>
+                </div>
+                <div class="logo-subtitle">RPi Monitor Control Panel</div>
+            </div>
+            <ul class="menu">
+                <li class="menu-item">
+                    <a href="#" class="menu-link active" data-page="dashboard">
+                        <span class="menu-icon">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="18" y1="20" x2="18" y2="10"></line>
+                                <line x1="12" y1="20" x2="12" y2="4"></line>
+                                <line x1="6" y1="20" x2="6" y2="14"></line>
+                            </svg>
+                        </span>
+                        <span>监控面板</span>
+                    </a>
+                </li>
+                <li class="menu-item">
+                    <a href="#" class="menu-link" data-page="network">
+                        <span class="menu-icon">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M5 12.55a11 11 0 0 1 14.08 0"></path>
+                                <path d="M1.42 9a16 16 0 0 1 21.16 0"></path>
+                                <path d="M8.53 16.11a6 6 0 0 1 6.95 0"></path>
+                                <line x1="12" y1="20" x2="12.01" y2="20"></line>
+                            </svg>
+                        </span>
+                        <span>网络设置</span>
+                    </a>
+                </li>
+                <li class="menu-item">
+                    <a href="#" class="menu-link" id="hat-menu-toggle">
+                        <span class="menu-icon">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect>
+                                <rect x="7" y="7" width="10" height="10" rx="1" ry="1"></rect>
+                                <line x1="7" y1="12" x2="17" y2="12"></line>
+                                <line x1="12" y1="7" x2="12" y2="17"></line>
+                                <circle cx="7" cy="7" r="1"></circle>
+                                <circle cx="17" cy="7" r="1"></circle>
+                                <circle cx="7" cy="17" r="1"></circle>
+                                <circle cx="17" cy="17" r="1"></circle>
+                            </svg>
+                        </span>
+                        <span>HAT-40pin</span>
+                    </a>
+                    <ul class="menu-sub">
+                        <li><a href="#" class="menu-link" data-page="gpio">GPIO</a></li>
+                        <li><a href="#" class="menu-link" data-page="uart">UART</a></li>
+                        <li><a href="#" class="menu-link" data-page="spi">SPI</a></li>
+                        <li><a href="#" class="menu-link" data-page="i2c">I2C</a></li>
+                        <li><a href="#" class="menu-link" data-page="pwm">PWM</a></li>
+                    </ul>
+                </li>
+                <li class="menu-item">
+                    <a href="#" class="menu-link" data-page="about">
+                        <span class="menu-icon">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <line x1="12" y1="16" x2="12" y2="12"></line>
+                                <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                            </svg>
+                        </span>
+                        <span>关于</span>
+                    </a>
+                </li>
+            </ul>
+        </aside>
+
+        <!-- 内容区域 -->
+        <main class="content">
+            <!-- 监控面板页面 -->
+            <div id="page-dashboard" class="page active">
+                <!-- 页面标题和头部信息 -->
+                <div class="page-header">
+                    <h1 class="page-title">监控面板</h1>
+                    <button class="btn-icon" id="refreshBtn">
+                        <span>刷新</span>
+                    </button>
+                </div>
+                
+                <!-- 系统信息卡片 -->
+                <div class="card card-system-info">
+                    <div class="card-title">系统信息</div>
+                    <div class="card-content">
+                        <div class="info-grid">
+                            <div class="info-item">
+                                <span class="info-label">主机名</span>
+                                <span class="info-value" id="info-hostname">-</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">运行时间</span>
+                                <span class="info-value" id="info-uptime">-</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">操作系统</span>
+                                <span class="info-value" id="info-os">-</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">CPU架构</span>
+                                <span class="info-value" id="info-arch">-</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">时区</span>
+                                <span class="info-value" id="info-timezone">-</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">日期时间</span>
+                                <span class="info-value" id="info-datetime">-</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">硬件厂商</span>
+                                <span class="info-value" id="info-vendor">-</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">硬件型号</span>
+                                <span class="info-value" id="info-model">-</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 性能指标卡片组（2x2 网格） -->
+                <div class="grid grid-4">
+                    <!-- CPU 占用率 -->
+                    <div class="card card-metric">
+                        <div class="card-title">CPU 占用率</div>
+                        <div class="card-content">
+                            <div class="metric-circle">
+                                <svg width="140" height="140">
+                                    <circle class="metric-circle-bg" cx="70" cy="70" r="60"></circle>
+                                    <circle class="metric-circle-fill" id="cpu-progress" cx="70" cy="70" r="60" 
+                                            stroke-dasharray="377" stroke-dashoffset="377"></circle>
+                                </svg>
+                                <div class="metric-circle-text">
+                                    <span class="metric-value" id="cpu-percent">0</span>
+                                    <span class="metric-unit">%</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 内存占用率 -->
+                    <div class="card card-metric">
+                        <div class="card-title">内存占用率</div>
+                        <div class="card-content">
+                            <div class="metric-circle">
+                                <svg width="140" height="140">
+                                    <circle class="metric-circle-bg" cx="70" cy="70" r="60"></circle>
+                                    <circle class="metric-circle-fill" id="memory-progress" cx="70" cy="70" r="60" 
+                                            stroke-dasharray="377" stroke-dashoffset="377"></circle>
+                                </svg>
+                                <div class="metric-circle-text">
+                                    <span class="metric-value" id="memory-percent">0</span>
+                                    <span class="metric-unit">%</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- CPU 温度（占位，待实现） -->
+                    <div class="card card-metric">
+                        <div class="card-title">CPU 温度</div>
+                        <div class="card-content">
+                            <div class="metric-circle">
+                                <svg width="140" height="140">
+                                    <circle class="metric-circle-bg" cx="70" cy="70" r="60"></circle>
+                                    <circle class="metric-circle-fill" id="temp-progress" cx="70" cy="70" r="60" 
+                                            stroke-dasharray="377" stroke-dashoffset="377"></circle>
+                                </svg>
+                                <div class="metric-circle-text">
+                                    <span class="metric-value" id="temp-value">-</span>
+                                    <span class="metric-unit">°C</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 存储占用率（占位，待实现） -->
+                    <div class="card card-metric">
+                        <div class="card-title">存储占用率</div>
+                        <div class="card-content">
+                            <div class="metric-circle">
+                                <svg width="140" height="140">
+                                    <circle class="metric-circle-bg" cx="70" cy="70" r="60"></circle>
+                                    <circle class="metric-circle-fill" id="storage-progress" cx="70" cy="70" r="60" 
+                                            stroke-dasharray="377" stroke-dashoffset="377"></circle>
+                                </svg>
+                                <div class="metric-circle-text">
+                                    <span class="metric-value" id="storage-percent">0</span>
+                                    <span class="metric-unit">%</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 网络状态卡片组 -->
+                <div class="grid grid-2">
+                    <!-- 以太网状态 -->
+                    <div class="card card-network">
+                        <div class="card-title">以太网 (eth0)</div>
+                        <div class="card-content">
+                            <div class="network-status">
+                                <span class="status-badge" id="eth-status-badge">
+                                    <span class="status-indicator" id="eth-status"></span>
+                                    <span id="eth-status-text">未连接</span>
+                                </span>
+                            </div>
+                            <div class="network-info">
+                                <div class="info-row">
+                                    <span class="info-label">IP 地址</span>
+                                    <span class="info-value" id="eth-ip">-</span>
+                                </div>
+                                <div class="info-row">
+                                    <span class="info-label">MAC 地址</span>
+                                    <span class="info-value" id="eth-mac">-</span>
+                                </div>
+                                <div class="info-row">
+                                    <span class="info-label">链接速度</span>
+                                    <span class="info-value" id="eth-speed">-</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Wi-Fi 状态 -->
+                    <div class="card card-network">
+                        <div class="card-title">Wi-Fi (wlan0)</div>
+                        <div class="card-content">
+                            <div class="network-status">
+                                <span class="status-badge" id="wifi-status-badge">
+                                    <span class="status-indicator" id="wifi-status"></span>
+                                    <span id="wifi-status-text">未连接</span>
+                                </span>
+                            </div>
+                            <div class="network-info" id="wifi-info">
+                                <div class="info-row">
+                                    <span class="info-label">SSID</span>
+                                    <span class="info-value" id="wifi-ssid">-</span>
+                                </div>
+                                <div class="info-row">
+                                    <span class="info-label">IP 地址</span>
+                                    <span class="info-value" id="wifi-ip">-</span>
+                                </div>
+                                <div class="info-row">
+                                    <span class="info-label">信号强度</span>
+                                    <span class="info-value" id="wifi-signal">-</span>
+                                </div>
+                            </div>
+                            <div class="network-empty" id="wifi-empty" style="display: none;">
+                                <p>未连接到任何网络</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 快速操作 -->
+                <div class="card card-actions">
+                    <div class="card-title">快速操作</div>
+                    <div class="card-content">
+                        <div class="quick-actions">
+                            <button class="btn btn-danger" id="reboot-btn">重启系统</button>
+                            <button class="btn btn-danger" id="shutdown-btn">关闭系统</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 其他页面（保持原样） -->
+            <div id="page-network" class="page">
+                <h1 class="page-title">网络设置</h1>
+                <div class="card">
+                    <div class="card-title">功能开发中...</div>
+                    <div class="card-content">
+                        <p style="color: var(--color-text-secondary);">网络配置功能正在开发中。</p>
+                    </div>
+                </div>
+            </div>
+
+            <div id="page-gpio" class="page">
+                <h1 class="page-title">GPIO 控制</h1>
+                <div class="card">
+                    <div class="card-title">功能开发中...</div>
+                    <div class="card-content">
+                        <p style="color: var(--color-text-secondary);">GPIO 控制功能正在开发中。</p>
+                    </div>
+                </div>
+            </div>
+
+            <div id="page-uart" class="page">
+                <h1 class="page-title">UART 通信</h1>
+                <div class="card">
+                    <div class="card-title">功能开发中...</div>
+                    <div class="card-content">
+                        <p style="color: var(--color-text-secondary);">UART 通信功能正在开发中。</p>
+                    </div>
+                </div>
+            </div>
+
+            <div id="page-spi" class="page">
+                <h1 class="page-title">SPI 通信</h1>
+                <div class="card">
+                    <div class="card-title">功能开发中...</div>
+                    <div class="card-content">
+                        <p style="color: var(--color-text-secondary);">SPI 通信功能正在开发中。</p>
+                    </div>
+                </div>
+            </div>
+
+            <div id="page-i2c" class="page">
+                <h1 class="page-title">I2C 通信</h1>
+                <div class="card">
+                    <div class="card-title">功能开发中...</div>
+                    <div class="card-content">
+                        <p style="color: var(--color-text-secondary);">I2C 通信功能正在开发中。</p>
+                    </div>
+                </div>
+            </div>
+
+            <div id="page-pwm" class="page">
+                <h1 class="page-title">PWM 控制</h1>
+                <div class="card">
+                    <div class="card-title">功能开发中...</div>
+                    <div class="card-content">
+                        <p style="color: var(--color-text-secondary);">PWM 控制功能正在开发中。</p>
+                    </div>
+                </div>
+            </div>
+
+            <div id="page-about" class="page">
+                <h1 class="page-title">关于</h1>
+                <div class="card">
+                    <div class="card-title">piduier</div>
+                    <div class="card-content">
+                        <div class="info-row">
+                            <span class="info-label">版本</span>
+                            <span class="info-value">1.0.0</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">描述</span>
+                            <span class="info-value">树莓派监控和管理系统</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 消息提示 -->
+            <div id="message" class="message"></div>
+        </main>
+    </div>
+
+    <script src="js/app.js"></script>
+</body>
+</html>

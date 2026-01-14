@@ -52,17 +52,20 @@ case ${1} in
                 echo ""
                 echo "编译完成！"
                 echo "CMake 生成文件位置: ${BUILD_DIR}/"
-                echo "可执行文件位置: ./bin/server"
+                echo "可执行文件位置: ./bin/piduier"
+                echo "Web 文件位置: ./bin/web/"
                 echo ""
                 echo "运行方式:"
                 case ${ARCH} in
                         ARM64|arm64|aarch64)
                                 echo "  注意: ARM64 版本需要在 ARM64 设备上运行，或使用 qemu 模拟"
-                                echo "  sudo ./bin/server"
-                                echo "  或使用 qemu: qemu-aarch64 -L /usr/aarch64-linux-gnu ./bin/server"
+                                echo "  ./bin/piduier"
+                                echo "  或使用 root 权限: sudo ./bin/piduier"
+                                echo "  或使用 qemu: qemu-aarch64 -L /usr/aarch64-linux-gnu ./bin/piduier"
                                 ;;
                         *)
-                                echo "  sudo ./bin/server"
+                                echo "  ./bin/piduier"
+                                echo "  或使用 root 权限: sudo ./bin/piduier"
                                 ;;
                 esac
                 ;;
