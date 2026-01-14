@@ -21,6 +21,8 @@ set(SOURCES
     src/system/temperature.c
     src/system/storage.c
     src/network/network_manager.c
+    src/network/ethernet.c
+    src/network/wifi.c
     mongoose.c
 )
 

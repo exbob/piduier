@@ -41,6 +41,9 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
+    
+    // 网络配置页面初始化
+    initNetworkPage();
 });
 
 // 初始化菜单
@@ -109,6 +112,8 @@ function switchPage(page) {
     // 根据页面加载数据
     if (page === 'dashboard') {
         loadDashboard();
+    } else if (page === 'network') {
+        loadEthernetConfig();
     }
 }
 
@@ -437,6 +442,321 @@ function showMessage(text, type = 'success') {
         setTimeout(() => {
             messageEl.classList.remove('show');
         }, 5000);
+    }
+}
+
+// ==================== 网络配置功能 ====================
+
+// 初始化网络配置页面
+function initNetworkPage() {
+    // 以太网配置按钮
+    const ethLoadBtn = document.getElementById('eth-load-btn');
+    if (ethLoadBtn) {
+        ethLoadBtn.addEventListener('click', loadEthernetConfig);
+    }
+    
+    const ethDhcpBtn = document.getElementById('eth-dhcp-btn');
+    if (ethDhcpBtn) {
+        ethDhcpBtn.addEventListener('click', () => {
+            if (confirm('确定要将以太网设置为 DHCP 模式吗？')) {
+                setEthernetDhcp();
+            }
+        });
+    }
+    
+    const ethStaticBtn = document.getElementById('eth-static-btn');
+    if (ethStaticBtn) {
+        ethStaticBtn.addEventListener('click', () => {
+            document.getElementById('eth-static-form').style.display = 'block';
+        });
+    }
+    
+    const ethStaticSaveBtn = document.getElementById('eth-static-save-btn');
+    if (ethStaticSaveBtn) {
+        ethStaticSaveBtn.addEventListener('click', setEthernetStatic);
+    }
+    
+    const ethStaticCancelBtn = document.getElementById('eth-static-cancel-btn');
+    if (ethStaticCancelBtn) {
+        ethStaticCancelBtn.addEventListener('click', () => {
+            document.getElementById('eth-static-form').style.display = 'none';
+        });
+    }
+    
+    // Wi-Fi 配置按钮
+    const wifiScanBtn = document.getElementById('wifi-scan-btn');
+    if (wifiScanBtn) {
+        wifiScanBtn.addEventListener('click', scanWifi);
+    }
+    
+    const wifiDisconnectBtn = document.getElementById('wifi-disconnect-btn');
+    if (wifiDisconnectBtn) {
+        wifiDisconnectBtn.addEventListener('click', () => {
+            if (confirm('确定要断开 Wi-Fi 连接吗？')) {
+                disconnectWifi();
+            }
+        });
+    }
+    
+    const wifiConnectSaveBtn = document.getElementById('wifi-connect-save-btn');
+    if (wifiConnectSaveBtn) {
+        wifiConnectSaveBtn.addEventListener('click', connectWifi);
+    }
+    
+    const wifiConnectCancelBtn = document.getElementById('wifi-connect-cancel-btn');
+    if (wifiConnectCancelBtn) {
+        wifiConnectCancelBtn.addEventListener('click', () => {
+            document.getElementById('wifi-connect-form').style.display = 'none';
+        });
+    }
+}
+
+// 加载以太网配置
+async function loadEthernetConfig() {
+    try {
+        const response = await fetch(`${API_BASE}/api/network/ethernet/config?device=eth0`);
+        if (!response.ok) {
+            throw new Error('Failed to load ethernet config');
+        }
+        const config = await response.json();
+        
+        document.getElementById('eth-config-device').textContent = config.device || 'eth0';
+        document.getElementById('eth-config-connection').textContent = config.connection_name || '-';
+        document.getElementById('eth-config-method').textContent = config.method === 'auto' ? 'DHCP' : (config.method === 'manual' ? '静态 IP' : '-');
+        document.getElementById('eth-config-ip').textContent = config.ip || '-';
+        document.getElementById('eth-config-netmask').textContent = config.netmask || '-';
+        document.getElementById('eth-config-gateway').textContent = config.gateway || '-';
+        
+        let dnsText = '';
+        if (config.dns1) dnsText = config.dns1;
+        if (config.dns2) dnsText += (dnsText ? ', ' : '') + config.dns2;
+        document.getElementById('eth-config-dns').textContent = dnsText || '-';
+    } catch (error) {
+        showMessage('加载以太网配置失败: ' + error.message, 'error');
+    }
+}
+
+// 设置以太网为 DHCP
+async function setEthernetDhcp() {
+    try {
+        const response = await fetch(`${API_BASE}/api/network/ethernet/config`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                device: 'eth0',
+                mode: 'dhcp'
+            })
+        });
+        
+        if (!response.ok) {
+            throw new Error('Failed to set DHCP');
+        }
+        
+        const result = await response.json();
+        if (result.status === 'success') {
+            showMessage('已设置为 DHCP 模式', 'success');
+            setTimeout(loadEthernetConfig, 2000);
+        } else {
+            throw new Error(result.message || 'Unknown error');
+        }
+    } catch (error) {
+        showMessage('设置 DHCP 失败: ' + error.message, 'error');
+    }
+}
+
+// 设置以太网为静态 IP
+async function setEthernetStatic() {
+    const ip = document.getElementById('eth-static-ip').value.trim();
+    const netmask = document.getElementById('eth-static-netmask').value.trim();
+    const gateway = document.getElementById('eth-static-gateway').value.trim();
+    const dns = document.getElementById('eth-static-dns').value.trim();
+    
+    if (!ip) {
+        showMessage('请输入 IP 地址', 'error');
+        return;
+    }
+    
+    const dnsArray = dns ? dns.split(/\s+/) : [];
+    
+    try {
+        const response = await fetch(`${API_BASE}/api/network/ethernet/config`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                device: 'eth0',
+                mode: 'static',
+                ip: ip,
+                netmask: netmask || '255.255.255.0',
+                gateway: gateway || '',
+                dns: dnsArray
+            })
+        });
+        
+        if (!response.ok) {
+            throw new Error('Failed to set static IP');
+        }
+        
+        const result = await response.json();
+        if (result.status === 'success') {
+            showMessage('已设置为静态 IP', 'success');
+            document.getElementById('eth-static-form').style.display = 'none';
+            setTimeout(loadEthernetConfig, 2000);
+        } else {
+            throw new Error(result.message || 'Unknown error');
+        }
+    } catch (error) {
+        showMessage('设置静态 IP 失败: ' + error.message, 'error');
+    }
+}
+
+// 扫描 Wi-Fi 网络
+async function scanWifi() {
+    const wifiScanBtn = document.getElementById('wifi-scan-btn');
+    const wifiListEl = document.getElementById('wifi-networks-list');
+    
+    if (wifiScanBtn) {
+        wifiScanBtn.disabled = true;
+        wifiScanBtn.textContent = '扫描中...';
+    }
+    
+    try {
+        const response = await fetch(`${API_BASE}/api/network/wifi/scan`);
+        if (!response.ok) {
+            throw new Error('Failed to scan WiFi');
+        }
+        const networks = await response.json();
+        
+        if (wifiListEl) {
+            if (networks.length === 0) {
+                wifiListEl.innerHTML = '<p style="color: var(--color-text-secondary); text-align: center; padding: 20px;">未找到可用网络</p>';
+            } else {
+                wifiListEl.innerHTML = '';
+                networks.forEach((net, index) => {
+                    const div = document.createElement('div');
+                    div.style.cssText = 'padding: 12px; border: 1px solid var(--color-border); border-radius: 8px; margin-bottom: 8px; cursor: pointer; transition: background 0.2s;';
+                    div.onmouseover = () => div.style.background = 'var(--color-border)';
+                    div.onmouseout = () => div.style.background = 'transparent';
+                    div.onclick = () => showWifiConnectForm(net.ssid || '', net.security || '');
+                    
+                    div.innerHTML = `
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <div style="font-weight: 600; color: var(--color-text-primary);">${net.ssid || '(隐藏网络)'}</div>
+                                <div style="font-size: 12px; color: var(--color-text-secondary); margin-top: 4px;">
+                                    ${net.security || '开放'} | 信号: ${net.signal}% | 频道: ${net.channel}
+                                </div>
+                            </div>
+                            ${net.in_use ? '<span style="color: var(--color-success);">已连接</span>' : ''}
+                        </div>
+                    `;
+                    wifiListEl.appendChild(div);
+                });
+            }
+        }
+    } catch (error) {
+        showMessage('扫描 Wi-Fi 失败: ' + error.message, 'error');
+    } finally {
+        if (wifiScanBtn) {
+            wifiScanBtn.disabled = false;
+            wifiScanBtn.textContent = '扫描网络';
+        }
+    }
+}
+
+// 显示 Wi-Fi 连接表单
+function showWifiConnectForm(ssid, security) {
+    const formEl = document.getElementById('wifi-connect-form');
+    const ssidInput = document.getElementById('wifi-connect-ssid');
+    const passwordInput = document.getElementById('wifi-connect-password');
+    
+    if (formEl && ssidInput) {
+        ssidInput.value = ssid;
+        if (passwordInput) {
+            passwordInput.value = '';
+            passwordInput.required = security && security !== '开放' && security !== '';
+        }
+        formEl.style.display = 'block';
+        formEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+}
+
+// 连接 Wi-Fi
+async function connectWifi() {
+    const ssid = document.getElementById('wifi-connect-ssid').value.trim();
+    const password = document.getElementById('wifi-connect-password').value;
+    
+    if (!ssid) {
+        showMessage('SSID 不能为空', 'error');
+        return;
+    }
+    
+    try {
+        const response = await fetch(`${API_BASE}/api/network/wifi/connect`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                ssid: ssid,
+                password: password || null
+            })
+        });
+        
+        if (!response.ok) {
+            throw new Error('Failed to connect WiFi');
+        }
+        
+        const result = await response.json();
+        if (result.status === 'success') {
+            showMessage('正在连接 Wi-Fi...', 'success');
+            document.getElementById('wifi-connect-form').style.display = 'none';
+            setTimeout(() => {
+                if (currentPage === 'dashboard') {
+                    loadDashboard();
+                }
+            }, 3000);
+        } else {
+            throw new Error(result.message || 'Unknown error');
+        }
+    } catch (error) {
+        showMessage('连接 Wi-Fi 失败: ' + error.message, 'error');
+    }
+}
+
+// 断开 Wi-Fi
+async function disconnectWifi() {
+    try {
+        const response = await fetch(`${API_BASE}/api/network/wifi/disconnect`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                device: 'wlan0'
+            })
+        });
+        
+        if (!response.ok) {
+            throw new Error('Failed to disconnect WiFi');
+        }
+        
+        const result = await response.json();
+        if (result.status === 'success') {
+            showMessage('已断开 Wi-Fi 连接', 'success');
+            setTimeout(() => {
+                if (currentPage === 'dashboard') {
+                    loadDashboard();
+                }
+            }, 1000);
+        } else {
+            throw new Error(result.message || 'Unknown error');
+        }
+    } catch (error) {
+        showMessage('断开 Wi-Fi 失败: ' + error.message, 'error');
     }
 }
 

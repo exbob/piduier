@@ -289,13 +289,115 @@
                 </div>
             </div>
 
-            <!-- 其他页面（保持原样） -->
+            <!-- 网络设置页面 -->
             <div id="page-network" class="page">
-                <h1 class="page-title">网络设置</h1>
+                <div class="page-header">
+                    <h1 class="page-title">网络设置</h1>
+                </div>
+
+                <!-- 以太网配置 -->
                 <div class="card">
-                    <div class="card-title">功能开发中...</div>
+                    <div class="card-title">以太网配置</div>
                     <div class="card-content">
-                        <p style="color: var(--color-text-secondary);">网络配置功能正在开发中。</p>
+                        <div class="info-row">
+                            <span class="info-label">设备</span>
+                            <span class="info-value" id="eth-config-device">eth0</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">连接名称</span>
+                            <span class="info-value" id="eth-config-connection">-</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">配置方式</span>
+                            <span class="info-value" id="eth-config-method">-</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">IP 地址</span>
+                            <span class="info-value" id="eth-config-ip">-</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">子网掩码</span>
+                            <span class="info-value" id="eth-config-netmask">-</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">网关</span>
+                            <span class="info-value" id="eth-config-gateway">-</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">DNS 服务器</span>
+                            <span class="info-value" id="eth-config-dns">-</span>
+                        </div>
+                        <div class="card-actions">
+                            <button class="btn btn-primary" id="eth-load-btn">加载配置</button>
+                            <button class="btn btn-secondary" id="eth-dhcp-btn">设置为 DHCP</button>
+                            <button class="btn btn-secondary" id="eth-static-btn">设置为静态 IP</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 静态 IP 配置表单 -->
+                <div class="card" id="eth-static-form" style="display: none;">
+                    <div class="card-title">静态 IP 配置</div>
+                    <div class="card-content">
+                        <div style="margin-bottom: 16px;">
+                            <label style="display: block; margin-bottom: 8px; color: var(--color-text-secondary);">IP 地址</label>
+                            <input type="text" id="eth-static-ip" placeholder="192.168.1.100" 
+                                   style="width: 100%; padding: 8px; background: var(--color-bg); border: 1px solid var(--color-border); border-radius: 4px; color: var(--color-text-primary);">
+                        </div>
+                        <div style="margin-bottom: 16px;">
+                            <label style="display: block; margin-bottom: 8px; color: var(--color-text-secondary);">子网掩码</label>
+                            <input type="text" id="eth-static-netmask" placeholder="255.255.255.0" 
+                                   style="width: 100%; padding: 8px; background: var(--color-bg); border: 1px solid var(--color-border); border-radius: 4px; color: var(--color-text-primary);">
+                        </div>
+                        <div style="margin-bottom: 16px;">
+                            <label style="display: block; margin-bottom: 8px; color: var(--color-text-secondary);">网关</label>
+                            <input type="text" id="eth-static-gateway" placeholder="192.168.1.1" 
+                                   style="width: 100%; padding: 8px; background: var(--color-bg); border: 1px solid var(--color-border); border-radius: 4px; color: var(--color-text-primary);">
+                        </div>
+                        <div style="margin-bottom: 16px;">
+                            <label style="display: block; margin-bottom: 8px; color: var(--color-text-secondary);">DNS 服务器（可选，多个用空格分隔）</label>
+                            <input type="text" id="eth-static-dns" placeholder="8.8.8.8 8.8.4.4" 
+                                   style="width: 100%; padding: 8px; background: var(--color-bg); border: 1px solid var(--color-border); border-radius: 4px; color: var(--color-text-primary);">
+                        </div>
+                        <div class="card-actions">
+                            <button class="btn btn-primary" id="eth-static-save-btn">保存配置</button>
+                            <button class="btn btn-secondary" id="eth-static-cancel-btn">取消</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Wi-Fi 配置 -->
+                <div class="card">
+                    <div class="card-title">Wi-Fi 配置</div>
+                    <div class="card-content">
+                        <div class="card-actions" style="margin-bottom: 16px;">
+                            <button class="btn btn-primary" id="wifi-scan-btn">扫描网络</button>
+                            <button class="btn btn-secondary" id="wifi-disconnect-btn">断开连接</button>
+                        </div>
+                        <div id="wifi-networks-list">
+                            <p style="color: var(--color-text-secondary); text-align: center; padding: 20px;">点击"扫描网络"按钮扫描可用 Wi-Fi 网络</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Wi-Fi 连接表单 -->
+                <div class="card" id="wifi-connect-form" style="display: none;">
+                    <div class="card-title">连接 Wi-Fi</div>
+                    <div class="card-content">
+                        <div style="margin-bottom: 16px;">
+                            <label style="display: block; margin-bottom: 8px; color: var(--color-text-secondary);">网络名称 (SSID)</label>
+                            <input type="text" id="wifi-connect-ssid" readonly
+                                   style="width: 100%; padding: 8px; background: var(--color-bg); border: 1px solid var(--color-border); border-radius: 4px; color: var(--color-text-primary);">
+                        </div>
+                        <div style="margin-bottom: 16px;">
+                            <label style="display: block; margin-bottom: 8px; color: var(--color-text-secondary);">密码（开放网络可留空）</label>
+                            <input type="password" id="wifi-connect-password" placeholder="输入 Wi-Fi 密码" 
+                                   style="width: 100%; padding: 8px; background: var(--color-bg); border: 1px solid var(--color-border); border-radius: 4px; color: var(--color-text-primary);">
+                        </div>
+                        <div class="card-actions">
+                            <button class="btn btn-primary" id="wifi-connect-save-btn">连接</button>
+                            <button class="btn btn-secondary" id="wifi-connect-cancel-btn">取消</button>
+                        </div>
                     </div>
                 </div>
             </div>
