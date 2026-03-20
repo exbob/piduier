@@ -1,4 +1,6 @@
-/* 现代工业风格深色主题 - 使用 OKLCH 色彩空间 */
+@import url('https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Manrope:wght@400;500;600;700&display=swap');
+
+/* 现代工业仪表风深色主题 - 使用 OKLCH 色彩空间 */
 
 /* CSS 变量定义（OKLCH 色彩空间，带 RGB 回退） */
 :root {
@@ -38,6 +40,12 @@
     --color-border: oklch(30% 0.02 260);
     --color-border-rgb: 55, 65, 81;
     
+    --color-surface: oklch(28% 0.03 260);
+    --color-surface-rgb: 38, 48, 66;
+    --color-panel-glow: rgba(var(--color-primary-rgb), 0.24);
+    --shadow-soft: 0 18px 40px rgba(0, 0, 0, 0.28);
+    --shadow-strong: 0 28px 52px rgba(0, 0, 0, 0.4);
+
     /* 侧边栏宽度 */
     --sidebar-width: 280px;
 }
@@ -50,8 +58,11 @@
 }
 
 body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-    background: var(--color-bg);
+    font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background:
+        radial-gradient(circle at 14% 16%, rgba(var(--color-primary-rgb), 0.1), transparent 32%),
+        radial-gradient(circle at 78% 0%, rgba(var(--color-success-rgb), 0.06), transparent 30%),
+        var(--color-bg);
     color: var(--color-text-primary);
     line-height: 1.6;
     min-height: 100vh;
@@ -63,17 +74,44 @@ body {
     min-height: 100vh;
 }
 
+.mobile-menu-toggle {
+    position: fixed;
+    top: 14px;
+    left: 14px;
+    z-index: 1200;
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    border: 1px solid rgba(var(--color-border-rgb), 0.9);
+    background: rgba(var(--color-card-rgb), 0.92);
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    gap: 5px;
+    padding: 0 11px;
+    cursor: pointer;
+}
+
+.mobile-menu-toggle span {
+    display: block;
+    width: 100%;
+    height: 2px;
+    border-radius: 999px;
+    background: var(--color-text-primary);
+}
+
 /* 侧边栏 */
 .sidebar {
     width: var(--sidebar-width);
     background: var(--color-card);
-    border-right: 1px solid var(--color-border);
+    border-right: 1px solid rgba(var(--color-border-rgb), 0.8);
     padding: 24px 0;
     position: fixed;
     left: 0;
     top: 0;
     bottom: 0;
     overflow-y: auto;
+    box-shadow: inset -1px 0 0 rgba(var(--color-primary-rgb), 0.14);
 }
 
 .sidebar-logo {
@@ -97,6 +135,7 @@ body {
 }
 
 .logo-text {
+    font-family: 'Chakra Petch', sans-serif;
     font-size: 24px;
     font-weight: 700;
     color: var(--color-text-primary);
@@ -125,19 +164,29 @@ body {
     color: var(--color-text-secondary);
     text-decoration: none;
     border-radius: 8px;
-    transition: all 0.2s ease;
+    transition: all 0.24s ease;
     cursor: pointer;
     font-size: 15px;
 }
 
 .menu-link:hover {
-    background: var(--color-border);
+    background: linear-gradient(
+        90deg,
+        rgba(var(--color-primary-rgb), 0.16),
+        rgba(var(--color-primary-rgb), 0.05)
+    );
     color: var(--color-text-primary);
+    transform: translateX(4px);
 }
 
 .menu-link.active {
-    background: var(--color-primary);
+    background: linear-gradient(
+        90deg,
+        rgba(var(--color-primary-rgb), 0.95),
+        rgba(var(--color-primary-rgb), 0.72)
+    );
     color: white;
+    box-shadow: 0 10px 24px rgba(var(--color-primary-rgb), 0.28);
 }
 
 .menu-icon {
@@ -190,6 +239,13 @@ body {
     min-height: 100vh;
 }
 
+.sidebar-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(7, 11, 20, 0.55);
+    z-index: 950;
+}
+
 /* 页面头部 */
 .page-header {
     display: flex;
@@ -201,7 +257,8 @@ body {
 }
 
 .page-title {
-    font-size: 28px;
+    font-family: 'Chakra Petch', sans-serif;
+    font-size: 32px;
     font-weight: 600;
     color: var(--color-text-primary);
 }
@@ -221,15 +278,33 @@ body {
 
 /* 卡片组件 */
 .card {
-    background: var(--color-card);
-    border: 1px solid var(--color-border);
-    border-radius: 12px;
+    background:
+        linear-gradient(
+            145deg,
+            rgba(var(--color-surface-rgb), 0.75),
+            rgba(var(--color-card-rgb), 0.9)
+        );
+    border: 1px solid rgba(var(--color-border-rgb), 0.9);
+    border-radius: 16px;
     padding: 24px;
     margin-bottom: 24px;
+    box-shadow: var(--shadow-soft);
+    backdrop-filter: blur(6px);
+}
+
+.card-metric.is-pulsing {
+    animation: metricPulse 0.45s ease;
+}
+
+@keyframes metricPulse {
+    0% { transform: scale(1); box-shadow: var(--shadow-soft); }
+    50% { transform: scale(1.02); box-shadow: 0 0 0 1px rgba(var(--color-primary-rgb), 0.5), var(--shadow-strong); }
+    100% { transform: scale(1); box-shadow: var(--shadow-soft); }
 }
 
 .card-title {
-    font-size: 18px;
+    font-family: 'Chakra Petch', sans-serif;
+    font-size: 20px;
     font-weight: 600;
     margin-bottom: 20px;
     color: var(--color-text-primary);
@@ -293,6 +368,7 @@ body {
     stroke-linecap: round;
     stroke-dasharray: 377;
     transition: stroke-dashoffset 0.3s ease, stroke 0.3s ease;
+    filter: drop-shadow(0 0 8px rgba(var(--color-primary-rgb), 0.24));
 }
 
 .metric-circle-text {
@@ -393,38 +469,43 @@ body {
 .btn {
     padding: 10px 20px;
     border: none;
-    border-radius: 8px;
+    border-radius: 10px;
     font-size: 14px;
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all 0.24s ease;
     display: inline-flex;
     align-items: center;
     gap: 8px;
 }
 
 .btn-primary {
-    background: var(--color-primary);
+    background: linear-gradient(
+        120deg,
+        rgba(var(--color-primary-rgb), 0.95),
+        rgba(var(--color-primary-rgb), 0.72)
+    );
     color: white;
+    box-shadow: 0 10px 22px rgba(var(--color-primary-rgb), 0.26);
 }
 
 .btn-primary:hover {
-    opacity: 0.9;
     transform: translateY(-1px);
+    box-shadow: 0 14px 24px rgba(var(--color-primary-rgb), 0.3);
 }
 
 .btn-secondary {
-    background: var(--color-border);
+    background: rgba(var(--color-border-rgb), 0.56);
     color: var(--color-text-primary);
     border: 1px solid var(--color-border);
 }
 
 .btn-secondary:hover {
-    background: var(--color-bg);
+    background: rgba(var(--color-border-rgb), 0.9);
 }
 
 .btn-danger {
-    background: var(--color-error);
+    background: linear-gradient(120deg, #ef4444, #dc2626);
     color: white;
 }
 
@@ -437,7 +518,7 @@ body {
     border: 1px solid var(--color-border);
     color: var(--color-text-primary);
     padding: 8px 16px;
-    border-radius: 8px;
+    border-radius: 10px;
     cursor: pointer;
     font-size: 14px;
     transition: all 0.2s ease;
@@ -447,8 +528,45 @@ body {
 }
 
 .btn-icon:hover {
-    background: var(--color-border);
+    background: rgba(var(--color-primary-rgb), 0.12);
     border-color: var(--color-primary);
+}
+
+.btn-icon.is-loading {
+    border-color: rgba(var(--color-primary-rgb), 0.9);
+}
+
+.btn-icon.is-loading span {
+    position: relative;
+    padding-left: 16px;
+}
+
+.btn-icon.is-loading span::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    width: 10px;
+    height: 10px;
+    margin-top: -5px;
+    border: 2px solid rgba(var(--color-primary-rgb), 0.45);
+    border-top-color: rgba(var(--color-primary-rgb), 1);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.btn:focus-visible,
+.btn-icon:focus-visible,
+.input-field:focus-visible,
+.menu-link:focus-visible,
+.pin-config-btn:focus-visible {
+    outline: 2px solid rgba(var(--color-primary-rgb), 0.9);
+    outline-offset: 2px;
 }
 
 .btn:disabled {
@@ -496,9 +614,14 @@ body {
 
 /* 消息提示 */
 .message {
+    position: fixed;
+    left: 18px;
+    bottom: 18px;
+    z-index: 2200;
+    max-width: min(520px, calc(100vw - 24px));
     padding: 12px 16px;
-    border-radius: 8px;
-    margin-top: 16px;
+    border-radius: 10px;
+    box-shadow: var(--shadow-soft);
     display: none;
 }
 
@@ -518,13 +641,166 @@ body {
     color: var(--color-error);
 }
 
+.gpio-conn-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    border-radius: 999px;
+    border: 1px solid var(--color-border);
+    background: rgba(var(--color-bg-rgb), 0.65);
+    color: var(--color-text-secondary);
+    font-size: 12px;
+    margin-left: auto;
+}
+
+.gpio-conn-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--color-text-secondary);
+}
+
+.gpio-conn-status-live {
+    border-color: rgba(var(--color-success-rgb), 0.7);
+    color: var(--color-success);
+}
+.gpio-conn-status-live .gpio-conn-dot {
+    background: var(--color-success);
+}
+
+.gpio-conn-status-fallback {
+    border-color: rgba(var(--color-warning-rgb), 0.7);
+    color: var(--color-warning);
+}
+.gpio-conn-status-fallback .gpio-conn-dot {
+    background: var(--color-warning);
+}
+
+.gpio-conn-status-idle {
+    border-color: var(--color-border);
+    color: var(--color-text-secondary);
+}
+.gpio-conn-status-idle .gpio-conn-dot {
+    background: var(--color-text-secondary);
+}
+
 /* 页面容器 */
 .page {
     display: none;
+    width: 100%;
+    max-width: 1280px;
+    margin: 0 auto;
 }
 
 .page.active {
     display: block;
+}
+
+.is-hidden {
+    display: none !important;
+}
+
+.section-note {
+    color: var(--color-text-secondary);
+    font-size: 14px;
+    margin-top: 4px;
+}
+
+.header-spacer {
+    margin-left: auto;
+}
+
+.form-field {
+    margin-bottom: 16px;
+}
+
+.form-label {
+    display: block;
+    margin-bottom: 8px;
+    color: var(--color-text-secondary);
+    font-size: 13px;
+    letter-spacing: 0.2px;
+}
+
+.input-field {
+    width: 100%;
+    padding: 10px 12px;
+    background: rgba(var(--color-bg-rgb), 0.9);
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    color: var(--color-text-primary);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.input-field:hover {
+    border-color: rgba(var(--color-primary-rgb), 0.4);
+}
+
+.input-field:focus {
+    border-color: rgba(var(--color-primary-rgb), 0.9);
+    box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb), 0.2);
+}
+
+.card-actions-tight {
+    margin-bottom: 16px;
+}
+
+.empty-hint {
+    color: var(--color-text-secondary);
+    text-align: center;
+    padding: 20px;
+}
+
+.pending-text {
+    color: var(--color-text-secondary);
+}
+
+.legend-color.power { background: #ef4444; }
+.legend-color.ground { background: #6b7280; }
+.legend-color.gpio { background: #eab308; }
+.legend-color.i2c { background: #3b82f6; }
+.legend-color.uart { background: #22c55e; }
+.legend-color.spi { background: #06b6d4; }
+.legend-color.pwm { background: #ec4899; }
+
+.wifi-network-item {
+    padding: 12px;
+    border: 1px solid var(--color-border);
+    border-radius: 10px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background: rgba(var(--color-bg-rgb), 0.35);
+}
+
+.wifi-network-item:hover {
+    background: rgba(var(--color-primary-rgb), 0.1);
+    border-color: rgba(var(--color-primary-rgb), 0.52);
+}
+
+.wifi-network-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+}
+
+.wifi-network-name {
+    font-weight: 600;
+    color: var(--color-text-primary);
+}
+
+.wifi-network-meta {
+    font-size: 12px;
+    color: var(--color-text-secondary);
+    margin-top: 4px;
+}
+
+.wifi-connected-tag {
+    color: var(--color-success);
+    font-size: 13px;
+    white-space: nowrap;
 }
 
 /* 响应式设计 */
@@ -535,6 +811,10 @@ body {
 }
 
 @media (max-width: 768px) {
+    .mobile-menu-toggle {
+        display: flex;
+    }
+
     .sidebar {
         transform: translateX(-100%);
         transition: transform 0.3s ease;
@@ -547,7 +827,7 @@ body {
     
     .content {
         margin-left: 0;
-        padding: 16px;
+        padding: 72px 16px 16px;
     }
     
     .grid-2,
@@ -559,8 +839,347 @@ body {
         flex-direction: column;
         align-items: flex-start;
     }
+
+    .gpio-conn-status {
+        margin-left: 0;
+    }
     
     .card-system-info .info-grid {
         grid-template-columns: 1fr;
+    }
+}
+
+/* GPIO 引脚布局样式 */
+.gpio-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-bottom: 24px;
+    padding: 16px;
+    background: var(--color-bg);
+    border-radius: 8px;
+    border: 1px solid var(--color-border);
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--color-text-secondary);
+}
+
+.legend-color {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    border: 1px solid var(--color-border);
+}
+
+/* GPIO 引脚布局表格 */
+.gpio-pinout-table-container {
+    overflow-x: auto;
+    padding: 16px 0;
+}
+
+.gpio-pinout-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+.gpio-pinout-table thead {
+    background: var(--color-bg);
+    border-bottom: 2px solid var(--color-border);
+}
+
+.gpio-pinout-table th {
+    padding: 12px 8px;
+    color: var(--color-text-secondary);
+    font-weight: 600;
+    font-size: 12px;
+    text-transform: uppercase;
+}
+
+.gpio-pinout-table th.text-right {
+    text-align: right;
+}
+
+.gpio-pinout-table th.text-left {
+    text-align: left;
+}
+
+.gpio-pinout-table th.text-center {
+    text-align: center;
+}
+
+.gpio-pinout-table tbody tr {
+    border-bottom: 1px solid var(--color-border);
+    transition: background 0.2s ease;
+}
+
+.gpio-pinout-table tbody tr:hover {
+    background: rgba(99, 102, 241, 0.05);
+}
+
+.gpio-pinout-table td {
+    padding: 5px 8px;
+    vertical-align: middle;
+}
+
+.gpio-pinout-table td.text-right {
+    text-align: right;
+}
+
+.gpio-pinout-table td.text-left {
+    text-align: left;
+}
+
+.gpio-pinout-table td.text-center {
+    text-align: center;
+}
+
+/* 引脚状态 */
+.pin-status-value {
+    font-weight: 600;
+    font-size: 14px;
+    min-width: 24px;
+    display: inline-block;
+}
+
+.pin-status-value.high {
+    color: #ef4444;
+}
+
+.pin-status-value.low {
+    color: var(--color-text-secondary);
+}
+
+/* 引脚配置按钮 */
+.pin-config-btn {
+    padding: 4px 12px;
+    font-size: 12px;
+    border: 1px solid var(--color-border);
+    background: var(--color-card);
+    color: var(--color-text-primary);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    min-width: 80px;
+}
+
+.pin-config-btn:hover {
+    background: rgba(var(--color-primary-rgb), 0.1);
+    border-color: var(--color-primary);
+}
+
+.pin-config-btn.active {
+    background: var(--color-primary);
+    color: white;
+    border-color: var(--color-primary);
+}
+
+.pin-config-actions {
+    display: inline-flex;
+    gap: 6px;
+    align-items: center;
+}
+
+.pin-attr-btn {
+    padding: 4px;
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--color-text-primary);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    width: 30px;
+    height: 28px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.pin-attr-btn:hover {
+    background: rgba(var(--color-primary-rgb), 0.1);
+    border-color: var(--color-primary);
+}
+
+.pin-attr-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    background: rgba(var(--color-primary-rgb), 0.05);
+    border-color: var(--color-border);
+}
+
+.pin-attrs {
+    margin: 0 8px;
+    display: inline-flex;
+    gap: 6px;
+    vertical-align: middle;
+}
+
+.pin-attr-chip {
+    font-size: 11px;
+    color: var(--color-text-secondary);
+    border: 1px solid var(--color-border);
+    background: rgba(var(--color-bg-primary-rgb), 0.48);
+    padding: 1px 6px;
+    border-radius: 999px;
+}
+
+.pin-attr-chip-drive {
+    min-width: 58px;
+    display: inline-flex;
+    justify-content: center;
+}
+
+.pin-attr-chip-pull {
+    min-width: 70px;
+    display: inline-flex;
+    justify-content: center;
+}
+
+.pin-attr-icon {
+    width: 16px;
+    height: 16px;
+    fill: currentColor;
+    opacity: 0.95;
+}
+
+.modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(10, 14, 24, 0.55);
+    z-index: 2100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+}
+
+.modal-dialog {
+    width: min(520px, calc(100vw - 32px));
+    margin: 0;
+}
+
+.gpio-config-menu {
+    position: fixed;
+    background: var(--color-card);
+    border: 1px solid var(--color-border);
+    border-radius: 10px;
+    padding: 4px;
+    z-index: 2000;
+    box-shadow: var(--shadow-strong);
+    min-width: 136px;
+}
+
+.gpio-config-menu-item {
+    padding: 8px 14px;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: background 0.2s ease;
+    color: var(--color-text-primary);
+    font-size: 13px;
+}
+
+.gpio-config-menu-item:hover {
+    background: rgba(var(--color-primary-rgb), 0.12);
+}
+
+/* 引脚描述 */
+.pin-description {
+    color: var(--color-text-primary);
+    font-size: 16px;
+    line-height: 1.4;
+}
+
+.pin-text-power { color: #ef4444; }
+.pin-text-ground { color: #6b7280; }
+.pin-text-gpio { color: #eab308; }
+.pin-text-i2c { color: #3b82f6; }
+.pin-text-uart { color: #22c55e; }
+.pin-text-spi { color: #06b6d4; }
+.pin-text-pwm { color: #ec4899; }
+.pin-text-eeprom { color: #3b82f6; }
+.pin-text-pcm { color: #06b6d4; }
+
+/* 引脚圆形 */
+.pin-circle {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 14px;
+    color: white;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    flex-shrink: 0;
+}
+
+/* 引脚颜色 */
+.pin-color-power {
+    background: #ef4444;
+}
+
+.pin-color-ground {
+    background: #6b7280;
+}
+
+.pin-color-gpio {
+    background: #eab308;
+}
+
+.pin-color-i2c {
+    background: #3b82f6;
+}
+
+.pin-color-uart {
+    background: #22c55e;
+}
+
+.pin-color-spi {
+    background: #06b6d4;
+}
+
+.pin-color-pwm {
+    background: #ec4899;
+}
+
+.pin-color-eeprom {
+    background: #3b82f6;
+}
+
+.pin-color-pcm {
+    background: #06b6d4;
+}
+
+/* GPIO 配置对话框 */
+.gpio-dialog {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 1000;
+    max-width: 400px;
+    width: 90%;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+}
+
+@media (max-width: 768px) {
+    .gpio-pinout {
+        flex-direction: column;
+        gap: 16px;
+    }
+    
+    .pins-column {
+        width: 100%;
+    }
+    
+    .gpio-pin {
+        min-width: auto;
     }
 }

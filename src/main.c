@@ -52,7 +52,8 @@ int main()
 	// mg_http_listen(&mgr, "https://0.0.0.0:8443", ev_handler, NULL);
 	
 	for (;;) {
-		mg_mgr_poll(&mgr, 1000); // Infinite event loop
+		mg_mgr_poll(&mgr, 100); // Infinite event loop
+        router_broadcast_gpio_if_changed(&mgr);
 	}
 	return 0;
 }

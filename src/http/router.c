@@ -9,9 +9,33 @@
 #include "../network/network_manager.h"
 #include "../network/ethernet.h"
 #include "../network/wifi.h"
+#include "../hardware/gpio.h"
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+
+#ifndef PIDUIER_VERSION
+#define PIDUIER_VERSION "unknown"
+#endif
+
+#ifndef PIDUIER_BUILD_ARCH
+#define PIDUIER_BUILD_ARCH "unknown"
+#endif
+
+#define GPIO_HINT "Check pinctrl availability, pin ownership, and permissions."
+static char *last_gpio_ws_json = NULL;
+static uint64_t last_gpio_ws_check_ms = 0;
+
+static void handle_system_version(struct mg_connection *c, struct mg_http_message *hm) {
+    if (mg_match(hm->method, mg_str("GET"), NULL)) {
+        mg_http_reply(c, 200, "Content-Type: application/json\r\n",
+            "{\"version\":\"%s\",\"build_arch\":\"%s\"}\n",
+            PIDUIER_VERSION, PIDUIER_BUILD_ARCH);
+    } else {
+        mg_http_reply(c, 405, "Content-Type: application/json\r\n",
+            "{\"error\":\"Method not allowed\"}\n");
+    }
+}
 
 static void handle_system_info(struct mg_connection *c, struct mg_http_message *hm) {
     if (mg_match(hm->method, mg_str("GET"), NULL)) {
@@ -375,6 +399,285 @@ static void handle_wifi_disconnect(struct mg_connection *c, struct mg_http_messa
     }
 }
 
+static void handle_gpio_status(struct mg_connection *c, struct mg_http_message *hm) {
+    if (mg_match(hm->method, mg_str("GET"), NULL)) {
+        gpio_status_t status;
+        gpio_status_init(&status);
+        
+        if (gpio_get_all_status(&status) == 0) {
+            char *json = gpio_status_to_json(&status);
+            if (json != NULL) {
+                mg_http_reply(c, 200, "Content-Type: application/json\r\n", "%s\n", json);
+                free(json);
+            } else {
+                mg_http_reply(c, 500, "Content-Type: application/json\r\n",
+                    "{\"error\":\"Failed to generate JSON\"}\n");
+            }
+        } else {
+            mg_http_reply(c, 503, "Content-Type: application/json\r\n",
+                "{\"error\":\"Failed to get GPIO status\",\"hint\":\"%s\"}\n", GPIO_HINT);
+        }
+        
+        gpio_status_free(&status);
+    }
+}
+
+static void handle_gpio_pin(struct mg_connection *c, struct mg_http_message *hm) {
+    if (mg_match(hm->method, mg_str("GET"), NULL)) {
+        // 从 URI 中提取 GPIO 编号，例如 /api/gpio/17
+        struct mg_str uri = hm->uri;
+        int gpio_num = -1;
+        
+        // 查找最后一个 / 后的数字
+        const char *p = (const char *)uri.buf + uri.len - 1;
+        while (p >= (const char *)uri.buf && *p != '/') p--;
+        if (p >= (const char *)uri.buf) {
+            p++;
+            gpio_num = atoi(p);
+        }
+        
+        if (gpio_num < 0 || !gpio_is_supported(gpio_num)) {
+            mg_http_reply(c, 400, "Content-Type: application/json\r\n",
+                "{\"error\":\"Invalid or unsupported GPIO pin\"}\n");
+            return;
+        }
+        
+        gpio_pin_info_t info;
+        if (gpio_get_pin_status(gpio_num, &info) == 0) {
+            char *json = gpio_pin_info_to_json(&info);
+            if (json != NULL) {
+                mg_http_reply(c, 200, "Content-Type: application/json\r\n", "%s\n", json);
+                free(json);
+            } else {
+                mg_http_reply(c, 500, "Content-Type: application/json\r\n",
+                    "{\"error\":\"Failed to generate JSON\"}\n");
+            }
+        } else {
+            mg_http_reply(c, 503, "Content-Type: application/json\r\n",
+                "{\"error\":\"Failed to get GPIO pin status\",\"hint\":\"%s\"}\n", GPIO_HINT);
+        }
+    }
+}
+
+static int parse_gpio_num_from_uri(const struct mg_str uri) {
+    char uri_buf[128];
+    int gpio_num = -1;
+    if (uri.len <= 0 || uri.len >= (int) sizeof(uri_buf)) {
+        return -1;
+    }
+    snprintf(uri_buf, sizeof(uri_buf), "%.*s", (int) uri.len, uri.buf);
+
+    if (sscanf(uri_buf, "/api/gpio/%d/mode", &gpio_num) == 1) {
+        fprintf(stderr, "[GPIO][router] parse uri='%s' -> gpio=%d (mode)\n", uri_buf, gpio_num);
+        return gpio_num;
+    }
+    if (sscanf(uri_buf, "/api/gpio/%d/value", &gpio_num) == 1) {
+        fprintf(stderr, "[GPIO][router] parse uri='%s' -> gpio=%d (value)\n", uri_buf, gpio_num);
+        return gpio_num;
+    }
+    if (sscanf(uri_buf, "/api/gpio/%d", &gpio_num) == 1) {
+        fprintf(stderr, "[GPIO][router] parse uri='%s' -> gpio=%d (pin)\n", uri_buf, gpio_num);
+        return gpio_num;
+    }
+    fprintf(stderr, "[GPIO][router] failed to parse uri='%s'\n", uri_buf);
+    return -1;
+}
+
+static int uri_has_suffix(struct mg_str uri, const char *suffix) {
+    size_t suffix_len = strlen(suffix);
+    if (uri.len < suffix_len) {
+        return 0;
+    }
+    return memcmp(uri.buf + uri.len - suffix_len, suffix, suffix_len) == 0;
+}
+
+static int uri_has_prefix(struct mg_str uri, const char *prefix) {
+    size_t prefix_len = strlen(prefix);
+    if (uri.len < prefix_len) {
+        return 0;
+    }
+    return memcmp(uri.buf, prefix, prefix_len) == 0;
+}
+
+static int has_gpio_ws_clients(struct mg_mgr *mgr) {
+    for (struct mg_connection *it = mgr->conns; it != NULL; it = it->next) {
+        if (it->is_websocket && it->data[0] == 1 && !it->is_closing) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+static void handle_gpio_mode(struct mg_connection *c, struct mg_http_message *hm) {
+    if (mg_match(hm->method, mg_str("POST"), NULL)) {
+        int gpio_num = parse_gpio_num_from_uri(hm->uri);
+        
+        if (gpio_num < 0 || !gpio_is_supported(gpio_num)) {
+            fprintf(stderr, "[GPIO][router] mode request rejected: gpio=%d supported=%d\n",
+                gpio_num, gpio_is_supported(gpio_num));
+            mg_http_reply(c, 400, "Content-Type: application/json\r\n",
+                "{\"error\":\"Invalid or unsupported GPIO pin\"}\n");
+            return;
+        }
+        
+        char *mode = mg_json_get_str(hm->body, "$.mode");
+        int result = -1;
+        
+        if (mode != NULL) {
+            fprintf(stderr, "[GPIO][router] mode request gpio=%d mode=%s\n", gpio_num, mode);
+            if (strcmp(mode, "input") == 0) {
+                result = gpio_set_input(gpio_num);
+            } else if (strcmp(mode, "output") == 0) {
+                int initial_value = (int) mg_json_get_long(hm->body, "$.initial_value", 0);
+                if (initial_value != 0 && initial_value != 1) {
+                    initial_value = 0;
+                }
+                result = gpio_set_output(gpio_num, initial_value);
+                fprintf(stderr, "[GPIO][router] mode output gpio=%d initial=%d result=%d errno=%d\n",
+                    gpio_num, initial_value, result, errno);
+            }
+        }
+        
+        if (result == 0) {
+            mg_http_reply(c, 200, "Content-Type: application/json\r\n",
+                "{\"status\":\"success\"}\n");
+        } else {
+            fprintf(stderr, "[GPIO][router] mode set failed gpio=%d mode=%s result=%d errno=%d\n",
+                gpio_num, mode ? mode : "(null)", result, errno);
+            mg_http_reply(c, 503, "Content-Type: application/json\r\n",
+                "{\"status\":\"error\",\"message\":\"Failed to set GPIO mode\",\"hint\":\"%s\"}\n", GPIO_HINT);
+        }
+        
+        if (mode) free(mode);
+    }
+}
+
+static void handle_gpio_value(struct mg_connection *c, struct mg_http_message *hm) {
+    if (mg_match(hm->method, mg_str("GET"), NULL)) {
+        int gpio_num = parse_gpio_num_from_uri(hm->uri);
+        
+        if (gpio_num < 0 || !gpio_is_supported(gpio_num)) {
+            fprintf(stderr, "[GPIO][router] value request rejected: gpio=%d supported=%d\n",
+                gpio_num, gpio_is_supported(gpio_num));
+            mg_http_reply(c, 400, "Content-Type: application/json\r\n",
+                "{\"error\":\"Invalid or unsupported GPIO pin\"}\n");
+            return;
+        }
+        
+        int value = gpio_get_value(gpio_num);
+        if (value >= 0) {
+            mg_http_reply(c, 200, "Content-Type: application/json\r\n",
+                "{\"gpio_num\":%d,\"value\":%d}\n", gpio_num, value);
+        } else {
+            mg_http_reply(c, 503, "Content-Type: application/json\r\n",
+                "{\"error\":\"Failed to get GPIO value\",\"hint\":\"%s\"}\n", GPIO_HINT);
+        }
+    } else if (mg_match(hm->method, mg_str("POST"), NULL)) {
+        int gpio_num = parse_gpio_num_from_uri(hm->uri);
+        
+        if (gpio_num < 0 || !gpio_is_supported(gpio_num)) {
+            mg_http_reply(c, 400, "Content-Type: application/json\r\n",
+                "{\"error\":\"Invalid or unsupported GPIO pin\"}\n");
+            return;
+        }
+        
+        int value = (int) mg_json_get_long(hm->body, "$.value", -1);
+        
+        if (value < 0 || value > 1) {
+            mg_http_reply(c, 400, "Content-Type: application/json\r\n",
+                "{\"error\":\"Invalid value, must be 0 or 1\"}\n");
+            return;
+        }
+        
+        int result = gpio_set_value(gpio_num, value);
+        fprintf(stderr, "[GPIO][router] set value gpio=%d value=%d result=%d errno=%d\n",
+            gpio_num, value, result, errno);
+        if (result == 0) {
+            mg_http_reply(c, 200, "Content-Type: application/json\r\n",
+                "{\"status\":\"success\"}\n");
+        } else {
+            mg_http_reply(c, 503, "Content-Type: application/json\r\n",
+                "{\"status\":\"error\",\"message\":\"Failed to set GPIO value\",\"hint\":\"%s\"}\n", GPIO_HINT);
+        }
+    }
+}
+
+static const char *pull_to_str(gpio_pull_t pull) {
+    switch (pull) {
+        case GPIO_PULL_UP: return "up";
+        case GPIO_PULL_DOWN: return "down";
+        case GPIO_PULL_OFF: return "off";
+        default: return "unknown";
+    }
+}
+
+static const char *drive_to_str(int drive) {
+    if (drive == 1) return "dh";
+    if (drive == 0) return "dl";
+    return "unknown";
+}
+
+static void handle_gpio_attrs(struct mg_connection *c, struct mg_http_message *hm) {
+    int gpio_num = parse_gpio_num_from_uri(hm->uri);
+    if (gpio_num < 0 || !gpio_is_supported(gpio_num)) {
+        mg_http_reply(c, 400, "Content-Type: application/json\r\n",
+            "{\"error\":\"Invalid or unsupported GPIO pin\"}\n");
+        return;
+    }
+
+    if (mg_match(hm->method, mg_str("GET"), NULL)) {
+        gpio_pin_attrs_t attrs;
+        if (gpio_get_attrs(gpio_num, &attrs) == 0) {
+            mg_http_reply(c, 200, "Content-Type: application/json\r\n",
+                "{\"gpio_num\":%d,\"pull\":\"%s\",\"drive\":\"%s\",\"available\":%d}\n",
+                attrs.gpio_num, pull_to_str(attrs.pull), drive_to_str(attrs.drive), attrs.available);
+        } else {
+            mg_http_reply(c, 503, "Content-Type: application/json\r\n",
+                "{\"error\":\"Failed to get GPIO attrs\",\"hint\":\"%s\"}\n", GPIO_HINT);
+        }
+        return;
+    }
+
+    if (mg_match(hm->method, mg_str("POST"), NULL)) {
+        char *pull = mg_json_get_str(hm->body, "$.pull");
+        char *drive = mg_json_get_str(hm->body, "$.drive");
+        int has_pull = (pull != NULL);
+        int has_drive = (drive != NULL);
+
+        if (!has_pull && !has_drive) {
+            mg_http_reply(c, 400, "Content-Type: application/json\r\n",
+                "{\"error\":\"Nothing to update. Provide pull and/or drive.\"}\n");
+            if (pull) free(pull);
+            if (drive) free(drive);
+            return;
+        }
+
+        if (has_pull && gpio_set_pull(gpio_num, pull) != 0) {
+            mg_http_reply(c, 400, "Content-Type: application/json\r\n",
+                "{\"status\":\"error\",\"message\":\"Failed to set pull\"}\n");
+            if (pull) free(pull);
+            if (drive) free(drive);
+            return;
+        }
+        if (has_drive && gpio_set_drive(gpio_num, drive) != 0) {
+            mg_http_reply(c, 400, "Content-Type: application/json\r\n",
+                "{\"status\":\"error\",\"message\":\"Failed to set drive mode\"}\n");
+            if (pull) free(pull);
+            if (drive) free(drive);
+            return;
+        }
+
+        if (pull) free(pull);
+        if (drive) free(drive);
+        mg_http_reply(c, 200, "Content-Type: application/json\r\n",
+            "{\"status\":\"success\"}\n");
+        return;
+    }
+
+    mg_http_reply(c, 405, "Content-Type: application/json\r\n",
+        "{\"error\":\"Method not allowed\"}\n");
+}
+
 static void handle_system_info_complete(struct mg_connection *c, struct mg_http_message *hm) {
     if (mg_match(hm->method, mg_str("GET"), NULL)) {
         // 构建完整的系统信息 JSON
@@ -553,6 +856,13 @@ static void handle_shutdown(struct mg_connection *c, struct mg_http_message *hm)
 }
 
 void router_handle_request(struct mg_connection *c, struct mg_http_message *hm) {
+    // GPIO WebSocket stream
+    if (mg_match(hm->uri, mg_str("/ws/gpio"), NULL)) {
+        mg_ws_upgrade(c, hm, NULL);
+        c->data[0] = 1;  // mark as gpio stream client
+        return;
+    }
+
     // 系统信息 API
     if (mg_match(hm->uri, mg_str("/api/system/info"), NULL)) {
         handle_system_info(c, hm);
@@ -594,6 +904,10 @@ void router_handle_request(struct mg_connection *c, struct mg_http_message *hm) 
     else if (mg_match(hm->uri, mg_str("/api/system/storage"), NULL)) {
         handle_storage(c, hm);
     }
+    // 系统版本 API
+    else if (mg_match(hm->uri, mg_str("/api/system/version"), NULL)) {
+        handle_system_version(c, hm);
+    }
     // 网络设备 API
     else if (mg_match(hm->uri, mg_str("/api/network/devices"), NULL)) {
         handle_network_devices(c, hm);
@@ -614,6 +928,29 @@ void router_handle_request(struct mg_connection *c, struct mg_http_message *hm) 
     else if (mg_match(hm->uri, mg_str("/api/network/wifi/disconnect"), NULL)) {
         handle_wifi_disconnect(c, hm);
     }
+    // GPIO 状态 API
+    else if (mg_match(hm->uri, mg_str("/api/gpio/status"), NULL)) {
+        handle_gpio_status(c, hm);
+    }
+    // GPIO 模式 API (例如 /api/gpio/17/mode)
+    else if (uri_has_prefix(hm->uri, "/api/gpio/") &&
+             uri_has_suffix(hm->uri, "/mode")) {
+        handle_gpio_mode(c, hm);
+    }
+    // GPIO 值 API (例如 /api/gpio/17/value)
+    else if (uri_has_prefix(hm->uri, "/api/gpio/") &&
+             uri_has_suffix(hm->uri, "/value")) {
+        handle_gpio_value(c, hm);
+    }
+    // GPIO 属性 API (例如 /api/gpio/17/attrs)
+    else if (uri_has_prefix(hm->uri, "/api/gpio/") &&
+             uri_has_suffix(hm->uri, "/attrs")) {
+        handle_gpio_attrs(c, hm);
+    }
+    // GPIO 单个引脚 API (例如 /api/gpio/17)
+    else if (uri_has_prefix(hm->uri, "/api/gpio/")) {
+        handle_gpio_pin(c, hm);
+    }
     // 系统重启 API
     else if (mg_match(hm->uri, mg_str("/api/system/reboot"), NULL)) {
         handle_reboot(c, hm);
@@ -630,5 +967,42 @@ void router_handle_request(struct mg_connection *c, struct mg_http_message *hm) 
     else {
         struct mg_http_serve_opts opts = {.root_dir = "web", .fs = &mg_fs_posix};
         mg_http_serve_dir(c, hm, &opts);
+    }
+}
+
+void router_broadcast_gpio_if_changed(struct mg_mgr *mgr) {
+    uint64_t now = mg_millis();
+    if (now - last_gpio_ws_check_ms < 500) {
+        return;
+    }
+    last_gpio_ws_check_ms = now;
+
+    if (!has_gpio_ws_clients(mgr)) {
+        return;
+    }
+
+    gpio_status_t status;
+    gpio_status_init(&status);
+    if (gpio_get_all_status(&status) != 0) {
+        gpio_status_free(&status);
+        return;
+    }
+
+    char *json = gpio_status_to_json(&status);
+    gpio_status_free(&status);
+    if (json == NULL) return;
+
+    if (last_gpio_ws_json != NULL && strcmp(last_gpio_ws_json, json) == 0) {
+        free(json);
+        return;  // no change, skip push
+    }
+
+    free(last_gpio_ws_json);
+    last_gpio_ws_json = json;
+
+    for (struct mg_connection *it = mgr->conns; it != NULL; it = it->next) {
+        if (it->is_websocket && it->data[0] == 1 && !it->is_closing) {
+            mg_ws_send(it, last_gpio_ws_json, strlen(last_gpio_ws_json), WEBSOCKET_OP_TEXT);
+        }
     }
 }

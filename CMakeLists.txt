@@ -5,9 +5,24 @@ project(piduier C)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 
+
 # 编译选项
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -O2")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D_GNU_SOURCE -D_POSIX_C_SOURCE=200809L")
+
+# Inject git describe version for runtime API/about page
+execute_process(
+    COMMAND git describe --tags --always --long
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    OUTPUT_VARIABLE PIDUIER_VERSION
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+    ERROR_QUIET
+)
+if(NOT PIDUIER_VERSION)
+    set(PIDUIER_VERSION "unknown")
+endif()
+add_definitions(-DPIDUIER_VERSION="${PIDUIER_VERSION}")
+add_definitions(-DPIDUIER_BUILD_ARCH="${CMAKE_SYSTEM_PROCESSOR}")
 
 # 添加源文件
 set(SOURCES
@@ -23,6 +38,7 @@ set(SOURCES
     src/network/network_manager.c
     src/network/ethernet.c
     src/network/wifi.c
+    src/hardware/gpio.c
     mongoose.c
 )
 
@@ -39,24 +55,8 @@ target_include_directories(piduier PRIVATE
     src/hardware
 )
 
-# 查找 libgpiod（可选，仅用于硬件控制功能）
-find_package(PkgConfig)
-if(PKG_CONFIG_FOUND)
-    pkg_check_modules(GPIOD libgpiod)
-endif()
-
 # 链接库
 target_link_libraries(piduier pthread)
-
-# 如果找到 libgpiod，链接它
-if(GPIOD_FOUND)
-    target_link_libraries(piduier ${GPIOD_LIBRARIES})
-    target_include_directories(piduier PRIVATE ${GPIOD_INCLUDE_DIRS})
-    add_definitions(-DHAVE_LIBGPIOD)
-    message(STATUS "libgpiod found - GPIO support enabled")
-else()
-    message(STATUS "libgpiod not found - GPIO support disabled")
-endif()
 
 # 设置安装规则 - 将可执行文件安装到 bin/ 目录
 install(TARGETS piduier

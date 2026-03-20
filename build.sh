@@ -1,8 +1,8 @@
 #!/bin/sh
 
-# 构建脚本 - 支持交叉编译
-# 用法: ./build.sh [clean]
-# 通过 ARCH 环境变量设置架构: ARCH=x86 或 ARCH=arm64 (默认为 x86)
+# Build script (compile only, no deployment)
+# Usage: ./build.sh [clean]
+# Select architecture with ARCH env var: ARCH=x86 or ARCH=arm64 (default x86)
 
 BUILD_DIR="./build"
 RELEASE_DIR="."
@@ -42,15 +42,30 @@ case ${1} in
                 echo "配置 CMake..."
                 rm -vrf ${BUILD_DIR}
                 cmake -S . -B ${BUILD_DIR} -D CMAKE_C_COMPILER=${CC}
+                if [ $? -ne 0 ]; then
+                    echo ""
+                    echo "CMake configure failed."
+                    exit 1
+                fi
                 
                 echo "开始编译..."
                 cmake --build ${BUILD_DIR} -j$(nproc)
+                if [ $? -ne 0 ]; then
+                    echo "Build failed."
+                    exit 1
+                fi
                 
                 echo "安装可执行文件到 bin/ 目录..."
                 cmake --install ${BUILD_DIR} --prefix ${RELEASE_DIR}
+                if [ $? -ne 0 ]; then
+                    echo "Install failed."
+                    exit 1
+                fi
                 
                 echo ""
                 echo "编译完成！"
+                echo "Note: This script only builds artifacts."
+                echo "Deployment must be run as a separate step."
                 echo "CMake 生成文件位置: ${BUILD_DIR}/"
                 echo "可执行文件位置: ./bin/piduier"
                 echo "Web 文件位置: ./bin/web/"

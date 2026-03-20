@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,6 +9,11 @@
 <body>
     <!-- 主布局容器 -->
     <div class="main-container">
+        <button class="mobile-menu-toggle" id="mobile-menu-toggle" aria-label="Open navigation menu">
+            <span></span>
+            <span></span>
+            <span></span>
+        </button>
         <!-- 侧边栏 -->
         <aside class="sidebar">
             <div class="sidebar-logo">
@@ -34,7 +39,7 @@
                                 <line x1="6" y1="20" x2="6" y2="14"></line>
                             </svg>
                         </span>
-                        <span>监控面板</span>
+                        <span>Dashboard</span>
                     </a>
                 </li>
                 <li class="menu-item">
@@ -47,7 +52,7 @@
                                 <line x1="12" y1="20" x2="12.01" y2="20"></line>
                             </svg>
                         </span>
-                        <span>网络设置</span>
+                        <span>Network</span>
                     </a>
                 </li>
                 <li class="menu-item">
@@ -83,11 +88,12 @@
                                 <line x1="12" y1="8" x2="12.01" y2="8"></line>
                             </svg>
                         </span>
-                        <span>关于</span>
+                        <span>About</span>
                     </a>
                 </li>
             </ul>
         </aside>
+        <div class="sidebar-overlay is-hidden" id="sidebar-overlay"></div>
 
         <!-- 内容区域 -->
         <main class="content">
@@ -95,47 +101,47 @@
             <div id="page-dashboard" class="page active">
                 <!-- 页面标题和头部信息 -->
                 <div class="page-header">
-                    <h1 class="page-title">监控面板</h1>
+                    <h1 class="page-title">Dashboard</h1>
                     <button class="btn-icon" id="refreshBtn">
-                        <span>刷新</span>
+                        <span>Refresh</span>
                     </button>
                 </div>
                 
                 <!-- 系统信息卡片 -->
                 <div class="card card-system-info">
-                    <div class="card-title">系统信息</div>
+                    <div class="card-title">System Info</div>
                     <div class="card-content">
                         <div class="info-grid">
                             <div class="info-item">
-                                <span class="info-label">主机名</span>
+                                <span class="info-label">Hostname</span>
                                 <span class="info-value" id="info-hostname">-</span>
                             </div>
                             <div class="info-item">
-                                <span class="info-label">运行时间</span>
+                                <span class="info-label">Uptime</span>
                                 <span class="info-value" id="info-uptime">-</span>
                             </div>
                             <div class="info-item">
-                                <span class="info-label">操作系统</span>
+                                <span class="info-label">OS</span>
                                 <span class="info-value" id="info-os">-</span>
                             </div>
                             <div class="info-item">
-                                <span class="info-label">CPU架构</span>
+                                <span class="info-label">CPU Arch</span>
                                 <span class="info-value" id="info-arch">-</span>
                             </div>
                             <div class="info-item">
-                                <span class="info-label">时区</span>
+                                <span class="info-label">Timezone</span>
                                 <span class="info-value" id="info-timezone">-</span>
                             </div>
                             <div class="info-item">
-                                <span class="info-label">日期时间</span>
+                                <span class="info-label">Date Time</span>
                                 <span class="info-value" id="info-datetime">-</span>
                             </div>
                             <div class="info-item">
-                                <span class="info-label">硬件厂商</span>
+                                <span class="info-label">Vendor</span>
                                 <span class="info-value" id="info-vendor">-</span>
                             </div>
                             <div class="info-item">
-                                <span class="info-label">硬件型号</span>
+                                <span class="info-label">Model</span>
                                 <span class="info-value" id="info-model">-</span>
                             </div>
                         </div>
@@ -146,7 +152,7 @@
                 <div class="grid grid-4">
                     <!-- CPU 占用率 -->
                     <div class="card card-metric">
-                        <div class="card-title">CPU 占用率</div>
+                        <div class="card-title">CPU Usage</div>
                         <div class="card-content">
                             <div class="metric-circle">
                                 <svg width="140" height="140">
@@ -164,7 +170,7 @@
 
                     <!-- 内存占用率 -->
                     <div class="card card-metric">
-                        <div class="card-title">内存占用率</div>
+                        <div class="card-title">Memory Usage</div>
                         <div class="card-content">
                             <div class="metric-circle">
                                 <svg width="140" height="140">
@@ -182,7 +188,7 @@
 
                     <!-- CPU 温度（占位，待实现） -->
                     <div class="card card-metric">
-                        <div class="card-title">CPU 温度</div>
+                        <div class="card-title">CPU Temp</div>
                         <div class="card-content">
                             <div class="metric-circle">
                                 <svg width="140" height="140">
@@ -200,7 +206,7 @@
 
                     <!-- 存储占用率（占位，待实现） -->
                     <div class="card card-metric">
-                        <div class="card-title">存储占用率</div>
+                        <div class="card-title">Storage Usage</div>
                         <div class="card-content">
                             <div class="metric-circle">
                                 <svg width="140" height="140">
@@ -221,25 +227,25 @@
                 <div class="grid grid-2">
                     <!-- 以太网状态 -->
                     <div class="card card-network">
-                        <div class="card-title">以太网 (eth0)</div>
+                        <div class="card-title">Ethernet (eth0)</div>
                         <div class="card-content">
                             <div class="network-status">
                                 <span class="status-badge" id="eth-status-badge">
                                     <span class="status-indicator" id="eth-status"></span>
-                                    <span id="eth-status-text">未连接</span>
+                                    <span id="eth-status-text">Disconnected</span>
                                 </span>
                             </div>
                             <div class="network-info">
                                 <div class="info-row">
-                                    <span class="info-label">IP 地址</span>
+                                    <span class="info-label">IP Address</span>
                                     <span class="info-value" id="eth-ip">-</span>
                                 </div>
                                 <div class="info-row">
-                                    <span class="info-label">MAC 地址</span>
+                                    <span class="info-label">MAC Address</span>
                                     <span class="info-value" id="eth-mac">-</span>
                                 </div>
                                 <div class="info-row">
-                                    <span class="info-label">链接速度</span>
+                                    <span class="info-label">Link Speed</span>
                                     <span class="info-value" id="eth-speed">-</span>
                                 </div>
                             </div>
@@ -253,7 +259,7 @@
                             <div class="network-status">
                                 <span class="status-badge" id="wifi-status-badge">
                                     <span class="status-indicator" id="wifi-status"></span>
-                                    <span id="wifi-status-text">未连接</span>
+                                    <span id="wifi-status-text">Disconnected</span>
                                 </span>
                             </div>
                             <div class="network-info" id="wifi-info">
@@ -262,16 +268,16 @@
                                     <span class="info-value" id="wifi-ssid">-</span>
                                 </div>
                                 <div class="info-row">
-                                    <span class="info-label">IP 地址</span>
+                                    <span class="info-label">IP Address</span>
                                     <span class="info-value" id="wifi-ip">-</span>
                                 </div>
                                 <div class="info-row">
-                                    <span class="info-label">信号强度</span>
+                                    <span class="info-label">Signal</span>
                                     <span class="info-value" id="wifi-signal">-</span>
                                 </div>
                             </div>
-                            <div class="network-empty" id="wifi-empty" style="display: none;">
-                                <p>未连接到任何网络</p>
+                            <div class="network-empty is-hidden" id="wifi-empty">
+                                <p>Not connected to any network</p>
                             </div>
                         </div>
                     </div>
@@ -279,11 +285,11 @@
 
                 <!-- 快速操作 -->
                 <div class="card card-actions">
-                    <div class="card-title">快速操作</div>
+                    <div class="card-title">Quick Actions</div>
                     <div class="card-content">
                         <div class="quick-actions">
-                            <button class="btn btn-danger" id="reboot-btn">重启系统</button>
-                            <button class="btn btn-danger" id="shutdown-btn">关闭系统</button>
+                            <button class="btn btn-danger" id="reboot-btn">Reboot</button>
+                            <button class="btn btn-danger" id="shutdown-btn">Shutdown</button>
                         </div>
                     </div>
                 </div>
@@ -292,178 +298,274 @@
             <!-- 网络设置页面 -->
             <div id="page-network" class="page">
                 <div class="page-header">
-                    <h1 class="page-title">网络设置</h1>
+                    <h1 class="page-title">Network Settings</h1>
                 </div>
 
                 <!-- 以太网配置 -->
                 <div class="card">
-                    <div class="card-title">以太网配置</div>
+                    <div class="card-title">Ethernet Configuration</div>
                     <div class="card-content">
                         <div class="info-row">
-                            <span class="info-label">设备</span>
+                            <span class="info-label">Device</span>
                             <span class="info-value" id="eth-config-device">eth0</span>
                         </div>
                         <div class="info-row">
-                            <span class="info-label">连接名称</span>
+                            <span class="info-label">Connection Name</span>
                             <span class="info-value" id="eth-config-connection">-</span>
                         </div>
                         <div class="info-row">
-                            <span class="info-label">配置方式</span>
+                            <span class="info-label">Method</span>
                             <span class="info-value" id="eth-config-method">-</span>
                         </div>
                         <div class="info-row">
-                            <span class="info-label">IP 地址</span>
+                            <span class="info-label">IP Address</span>
                             <span class="info-value" id="eth-config-ip">-</span>
                         </div>
                         <div class="info-row">
-                            <span class="info-label">子网掩码</span>
+                            <span class="info-label">Netmask</span>
                             <span class="info-value" id="eth-config-netmask">-</span>
                         </div>
                         <div class="info-row">
-                            <span class="info-label">网关</span>
+                            <span class="info-label">Gateway</span>
                             <span class="info-value" id="eth-config-gateway">-</span>
                         </div>
                         <div class="info-row">
-                            <span class="info-label">DNS 服务器</span>
+                            <span class="info-label">DNS Servers</span>
                             <span class="info-value" id="eth-config-dns">-</span>
                         </div>
                         <div class="card-actions">
-                            <button class="btn btn-primary" id="eth-load-btn">加载配置</button>
-                            <button class="btn btn-secondary" id="eth-dhcp-btn">设置为 DHCP</button>
-                            <button class="btn btn-secondary" id="eth-static-btn">设置为静态 IP</button>
+                            <button class="btn btn-primary" id="eth-load-btn">Load Config</button>
+                            <button class="btn btn-secondary" id="eth-dhcp-btn">Set DHCP</button>
+                            <button class="btn btn-secondary" id="eth-static-btn">Set Static IP</button>
                         </div>
                     </div>
                 </div>
 
                 <!-- 静态 IP 配置表单 -->
-                <div class="card" id="eth-static-form" style="display: none;">
-                    <div class="card-title">静态 IP 配置</div>
+                <div class="card is-hidden" id="eth-static-form">
+                    <div class="card-title">Static IP Configuration</div>
                     <div class="card-content">
-                        <div style="margin-bottom: 16px;">
-                            <label style="display: block; margin-bottom: 8px; color: var(--color-text-secondary);">IP 地址</label>
+                        <div class="form-field">
+                            <label class="form-label">IP Address</label>
                             <input type="text" id="eth-static-ip" placeholder="192.168.1.100" 
-                                   style="width: 100%; padding: 8px; background: var(--color-bg); border: 1px solid var(--color-border); border-radius: 4px; color: var(--color-text-primary);">
+                                   class="input-field">
                         </div>
-                        <div style="margin-bottom: 16px;">
-                            <label style="display: block; margin-bottom: 8px; color: var(--color-text-secondary);">子网掩码</label>
+                        <div class="form-field">
+                            <label class="form-label">Netmask</label>
                             <input type="text" id="eth-static-netmask" placeholder="255.255.255.0" 
-                                   style="width: 100%; padding: 8px; background: var(--color-bg); border: 1px solid var(--color-border); border-radius: 4px; color: var(--color-text-primary);">
+                                   class="input-field">
                         </div>
-                        <div style="margin-bottom: 16px;">
-                            <label style="display: block; margin-bottom: 8px; color: var(--color-text-secondary);">网关</label>
+                        <div class="form-field">
+                            <label class="form-label">Gateway</label>
                             <input type="text" id="eth-static-gateway" placeholder="192.168.1.1" 
-                                   style="width: 100%; padding: 8px; background: var(--color-bg); border: 1px solid var(--color-border); border-radius: 4px; color: var(--color-text-primary);">
+                                   class="input-field">
                         </div>
-                        <div style="margin-bottom: 16px;">
-                            <label style="display: block; margin-bottom: 8px; color: var(--color-text-secondary);">DNS 服务器（可选，多个用空格分隔）</label>
+                        <div class="form-field">
+                            <label class="form-label">DNS Servers (optional, separated by spaces)</label>
                             <input type="text" id="eth-static-dns" placeholder="8.8.8.8 8.8.4.4" 
-                                   style="width: 100%; padding: 8px; background: var(--color-bg); border: 1px solid var(--color-border); border-radius: 4px; color: var(--color-text-primary);">
+                                   class="input-field">
                         </div>
                         <div class="card-actions">
-                            <button class="btn btn-primary" id="eth-static-save-btn">保存配置</button>
-                            <button class="btn btn-secondary" id="eth-static-cancel-btn">取消</button>
+                            <button class="btn btn-primary" id="eth-static-save-btn">Save Config</button>
+                            <button class="btn btn-secondary" id="eth-static-cancel-btn">Cancel</button>
                         </div>
                     </div>
                 </div>
 
                 <!-- Wi-Fi 配置 -->
                 <div class="card">
-                    <div class="card-title">Wi-Fi 配置</div>
+                    <div class="card-title">Wi-Fi Configuration</div>
                     <div class="card-content">
-                        <div class="card-actions" style="margin-bottom: 16px;">
-                            <button class="btn btn-primary" id="wifi-scan-btn">扫描网络</button>
-                            <button class="btn btn-secondary" id="wifi-disconnect-btn">断开连接</button>
+                        <div class="card-actions card-actions-tight">
+                            <button class="btn btn-primary" id="wifi-scan-btn">Scan Networks</button>
+                            <button class="btn btn-secondary" id="wifi-disconnect-btn">Disconnect</button>
                         </div>
                         <div id="wifi-networks-list">
-                            <p style="color: var(--color-text-secondary); text-align: center; padding: 20px;">点击"扫描网络"按钮扫描可用 Wi-Fi 网络</p>
+                            <p class="empty-hint">Click "Scan Networks" to discover available Wi-Fi access points</p>
                         </div>
                     </div>
                 </div>
 
                 <!-- Wi-Fi 连接表单 -->
-                <div class="card" id="wifi-connect-form" style="display: none;">
-                    <div class="card-title">连接 Wi-Fi</div>
+                <div class="card is-hidden" id="wifi-connect-form">
+                    <div class="card-title">Connect Wi-Fi</div>
                     <div class="card-content">
-                        <div style="margin-bottom: 16px;">
-                            <label style="display: block; margin-bottom: 8px; color: var(--color-text-secondary);">网络名称 (SSID)</label>
+                        <div class="form-field">
+                            <label class="form-label">Network Name (SSID)</label>
                             <input type="text" id="wifi-connect-ssid" readonly
-                                   style="width: 100%; padding: 8px; background: var(--color-bg); border: 1px solid var(--color-border); border-radius: 4px; color: var(--color-text-primary);">
+                                   class="input-field">
                         </div>
-                        <div style="margin-bottom: 16px;">
-                            <label style="display: block; margin-bottom: 8px; color: var(--color-text-secondary);">密码（开放网络可留空）</label>
-                            <input type="password" id="wifi-connect-password" placeholder="输入 Wi-Fi 密码" 
-                                   style="width: 100%; padding: 8px; background: var(--color-bg); border: 1px solid var(--color-border); border-radius: 4px; color: var(--color-text-primary);">
+                        <div class="form-field">
+                            <label class="form-label">Password (leave empty for open networks)</label>
+                            <input type="password" id="wifi-connect-password" placeholder="Enter Wi-Fi password" 
+                                   class="input-field">
                         </div>
                         <div class="card-actions">
-                            <button class="btn btn-primary" id="wifi-connect-save-btn">连接</button>
-                            <button class="btn btn-secondary" id="wifi-connect-cancel-btn">取消</button>
+                            <button class="btn btn-primary" id="wifi-connect-save-btn">Connect</button>
+                            <button class="btn btn-secondary" id="wifi-connect-cancel-btn">Cancel</button>
                         </div>
                     </div>
                 </div>
             </div>
 
+            <!-- GPIO 控制页面 -->
             <div id="page-gpio" class="page">
-                <h1 class="page-title">GPIO 控制</h1>
+                <div class="page-header">
+                    <h1 class="page-title">HAT-40pin</h1>
+                    <div class="section-note">Configure and control Raspberry Pi HAT 40-pin pins</div>
+                    <div class="gpio-conn-status gpio-conn-status-idle" id="gpio-conn-status">
+                        <span class="gpio-conn-dot"></span>
+                        <span id="gpio-conn-text">Idle</span>
+                    </div>
+                    <button class="btn-icon header-spacer" id="gpio-refresh-btn">
+                        <span>Refresh</span>
+                    </button>
+                </div>
+
+                <!-- 40pin 引脚布局 -->
                 <div class="card">
-                    <div class="card-title">功能开发中...</div>
+                    <div class="card-title">40-pin Layout</div>
                     <div class="card-content">
-                        <p style="color: var(--color-text-secondary);">GPIO 控制功能正在开发中。</p>
+                        <!-- 图例 -->
+                        <div class="gpio-legend">
+                            <div class="legend-item">
+                                <span class="legend-color power"></span>
+                                <span>Power</span>
+                            </div>
+                            <div class="legend-item">
+                                <span class="legend-color ground"></span>
+                                <span>Ground</span>
+                            </div>
+                            <div class="legend-item">
+                                <span class="legend-color gpio"></span>
+                                <span>GPIO</span>
+                            </div>
+                            <div class="legend-item">
+                                <span class="legend-color i2c"></span>
+                                <span>I2C / EEPROM</span>
+                            </div>
+                            <div class="legend-item">
+                                <span class="legend-color uart"></span>
+                                <span>UART</span>
+                            </div>
+                            <div class="legend-item">
+                                <span class="legend-color spi"></span>
+                                <span>SPI / PCM</span>
+                            </div>
+                            <div class="legend-item">
+                                <span class="legend-color pwm"></span>
+                                <span>PWM</span>
+                            </div>
+                        </div>
+
+                        <!-- 引脚布局表格 -->
+                        <div class="gpio-pinout-table-container">
+                            <table class="gpio-pinout-table">
+                                <thead>
+                                    <tr>
+                                        <th class="text-right">State</th>
+                                        <th class="text-right">Config</th>
+                                        <th class="text-right">Description</th>
+                                        <th class="text-center">Pin</th>
+                                        <th class="text-center">Pin</th>
+                                        <th class="text-left">Description</th>
+                                        <th class="text-left">Config</th>
+                                        <th class="text-left">State</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="gpio-pins-table-body">
+                                    <!-- 引脚将通过 JavaScript 动态生成 -->
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
+
+                <div class="modal-backdrop is-hidden" id="gpio-attrs-modal">
+                    <div class="modal-dialog card">
+                        <div class="card-title">GPIO Advanced Attributes</div>
+                        <div class="card-content">
+                            <div class="form-field">
+                                <label class="form-label">GPIO Pin</label>
+                                <input type="text" id="gpio-attrs-gpio" readonly class="input-field">
+                            </div>
+                            <div class="form-field">
+                                <label class="form-label">Pull</label>
+                                <select id="gpio-attrs-pull" class="input-field">
+                                    <option value="off">Off</option>
+                                    <option value="up">Pull-up</option>
+                                    <option value="down">Pull-down</option>
+                                </select>
+                            </div>
+                            <div class="form-field">
+                                <label class="form-label">Drive</label>
+                                <select id="gpio-attrs-drive" class="input-field">
+                                    <option value="dh">Drive High (dh)</option>
+                                    <option value="dl">Drive Low (dl)</option>
+                                </select>
+                            </div>
+                            <div class="card-actions">
+                                <button class="btn btn-primary" id="gpio-attrs-save-btn">Save Attributes</button>
+                                <button class="btn btn-secondary" id="gpio-attrs-cancel-btn">Cancel</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
             </div>
 
             <div id="page-uart" class="page">
-                <h1 class="page-title">UART 通信</h1>
+                <h1 class="page-title">UART Communication</h1>
                 <div class="card">
-                    <div class="card-title">功能开发中...</div>
+                    <div class="card-title">In Development...</div>
                     <div class="card-content">
-                        <p style="color: var(--color-text-secondary);">UART 通信功能正在开发中。</p>
+                        <p class="pending-text">UART communication features are under development.</p>
                     </div>
                 </div>
             </div>
 
             <div id="page-spi" class="page">
-                <h1 class="page-title">SPI 通信</h1>
+                <h1 class="page-title">SPI Communication</h1>
                 <div class="card">
-                    <div class="card-title">功能开发中...</div>
+                    <div class="card-title">In Development...</div>
                     <div class="card-content">
-                        <p style="color: var(--color-text-secondary);">SPI 通信功能正在开发中。</p>
+                        <p class="pending-text">SPI communication features are under development.</p>
                     </div>
                 </div>
             </div>
 
             <div id="page-i2c" class="page">
-                <h1 class="page-title">I2C 通信</h1>
+                <h1 class="page-title">I2C Communication</h1>
                 <div class="card">
-                    <div class="card-title">功能开发中...</div>
+                    <div class="card-title">In Development...</div>
                     <div class="card-content">
-                        <p style="color: var(--color-text-secondary);">I2C 通信功能正在开发中。</p>
+                        <p class="pending-text">I2C communication features are under development.</p>
                     </div>
                 </div>
             </div>
 
             <div id="page-pwm" class="page">
-                <h1 class="page-title">PWM 控制</h1>
+                <h1 class="page-title">PWM Control</h1>
                 <div class="card">
-                    <div class="card-title">功能开发中...</div>
+                    <div class="card-title">In Development...</div>
                     <div class="card-content">
-                        <p style="color: var(--color-text-secondary);">PWM 控制功能正在开发中。</p>
+                        <p class="pending-text">PWM control features are under development.</p>
                     </div>
                 </div>
             </div>
 
             <div id="page-about" class="page">
-                <h1 class="page-title">关于</h1>
+                <h1 class="page-title">About</h1>
                 <div class="card">
                     <div class="card-title">piduier</div>
                     <div class="card-content">
                         <div class="info-row">
-                            <span class="info-label">版本</span>
-                            <span class="info-value">1.0.0</span>
+                            <span class="info-label">Version</span>
+                            <span class="info-value" id="about-version">unknown</span>
                         </div>
                         <div class="info-row">
-                            <span class="info-label">描述</span>
-                            <span class="info-value">树莓派监控和管理系统</span>
+                            <span class="info-label">Description</span>
+                            <span class="info-value">Raspberry Pi monitor and management system</span>
                         </div>
                     </div>
                 </div>
