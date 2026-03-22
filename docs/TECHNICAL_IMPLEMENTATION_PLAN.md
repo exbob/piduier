@@ -10,7 +10,7 @@
 |------|------|-----------|
 | HTTP 服务 | Mongoose 单进程，`mg_http_listen`，默认 `0.0.0.0:8000` | `src/main.c` |
 | 路由分发 | 按 URI 前缀匹配，JSON API + 静态文件 | `src/http/router.c`、`router_handle_request` |
-| 静态前端 | `web/` → 安装到 `bin/web/` | `CMakeLists.txt` `install(DIRECTORY web/ ...)` |
+| 静态前端 | `web/` → 安装到 `deploy/web/` | `CMakeLists.txt` `install(DIRECTORY web/ ...)` |
 | 系统/网络 | 已实现多组 `/api/system/*`、`/api/network/*` | `src/system/*`、`src/network/*` |
 | GPIO | **libgpiod**，白名单 10 个 BCM 脚；REST 已接好 | `src/hardware/gpio.c`、`/api/gpio/*` |
 | 构建 | CMake + `build.sh`，`ARCH=x86` / `ARCH=arm64` 交叉编译 | `build.sh`、`CMakeLists.txt` |
@@ -174,7 +174,7 @@ add_definitions(-DPIDUIER_VERSION="${PIDUIER_VERSION}")
 
 ### 7.1 阶段 A — 构建（仅在本机执行）
 
-- **x86（UI/联调）**：`./build.sh` 或 `ARCH=x86 ./build.sh` → 产物在仓库内 `./bin/piduier` 与 `./bin/web/`。无 libgpiod 时 GPIO 等 API 返回错误，仍可用于英文 UI 布局与路由联调。
+- **x86（UI/联调）**：`./build.sh` 或 `ARCH=x86 ./build.sh` → 产物在仓库内 `./deploy/piduier`、`./deploy/web/` 与 `./deploy/zlog.conf`。`./build.sh debug` 为 Debug 构建（DEBUG 日志到终端）。GPIO 使用 pinctrl 后端。
 - **树莓派 5 目标架构（交叉编译）**：在同一台开发机上执行 `ARCH=arm64 ./build.sh`，**仅生成** ARM64 可执行文件与静态资源，**不**在本步骤访问 SSH 或目标机。
 - 依赖与编译选项见 `README.md`、`build.sh`、`CMakeLists.txt`。
 
@@ -182,16 +182,16 @@ add_definitions(-DPIDUIER_VERSION="${PIDUIER_VERSION}")
 
 - **目标路径（开发调试约定）**：制品部署到目标机用户主目录下 **`~/Desktop/piduier`**（即 `$HOME/Desktop/piduier`）。目录内至少包含：
   - `piduier`（可执行文件）
-  - `web/`（与构建产物 `bin/web/` 内容一致）
+  - `web/`（与构建产物 `deploy/web/` 内容一致）
 - **推荐布局示例**：
   - `~/Desktop/piduier/piduier`
   - `~/Desktop/piduier/web/...`
-- **上传方式**：提供一个脚本完成部署工作，**仅**将 **阶段 A** 已生成的 `./bin/` 下内容同步到上述路径。示例（在开发机执行，**不要**与 `build.sh` 写在同一条命令里）：
+- **上传方式**：提供一个脚本完成部署工作，**仅**将 **阶段 A** 已生成的 `./deploy/` 下内容同步到上述路径。示例（在开发机执行，**不要**与 `build.sh` 写在同一条命令里）：
 
 ```bash
 # 示例：仅部署（构建须在此命令之前已完成）
-rsync -avz ./bin/ user@target-host:~/Desktop/piduier/
-# 或 scp -r ./bin/piduier ./bin/web user@target-host:~/Desktop/piduier/
+rsync -avz ./deploy/ user@target-host:~/Desktop/piduier/
+# 或 scp -r ./deploy/piduier ./deploy/web ./deploy/zlog.conf user@target-host:~/Desktop/piduier/
 ```
 
 - **SSH 密码**：可使用密码认证；执行 `scp`/`rsync`/`ssh` 时由工具 **交互提示输入密码**（不把密码写入脚本、仓库或文档）。若已配置 SSH 密钥，则无需每次输入密码。

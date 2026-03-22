@@ -10,6 +10,8 @@
 #include "../network/ethernet.h"
 #include "../network/wifi.h"
 #include "../hardware/gpio.h"
+#include "../util/log.h"
+#include <errno.h>
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -72,6 +74,7 @@ static void handle_hostname(struct mg_connection *c, struct mg_http_message *hm)
         if (hostname != NULL && strlen(hostname) > 0) {
             int result = system_set_hostname(hostname);
             if (result == 0) {
+                LOG_INFO("[system] hostname set to %s", hostname);
                 mg_http_reply(c, 200, "Content-Type: application/json\r\n",
                     "{\"status\":\"success\"}\n");
             } else {
@@ -107,6 +110,7 @@ static void handle_datetime(struct mg_connection *c, struct mg_http_message *hm)
         if (datetime != NULL && strlen(datetime) > 0) {
             int result = datetime_set_time(datetime);
             if (result == 0) {
+                LOG_INFO("[system] datetime set to %s", datetime);
                 mg_http_reply(c, 200, "Content-Type: application/json\r\n",
                     "{\"status\":\"success\"}\n");
             } else {
@@ -152,6 +156,7 @@ static void handle_timezone(struct mg_connection *c, struct mg_http_message *hm)
         if (timezone != NULL && strlen(timezone) > 0) {
             int result = datetime_set_timezone(timezone);
             if (result == 0) {
+                LOG_INFO("[system] timezone set to %s", timezone);
                 mg_http_reply(c, 200, "Content-Type: application/json\r\n",
                     "{\"status\":\"success\"}\n");
             } else {
@@ -323,6 +328,13 @@ static void handle_ethernet_config(struct mg_connection *c, struct mg_http_messa
         }
         
         if (result == 0) {
+            const char *mode_desc = "(unknown)";
+            if (mode != NULL && strcmp(mode, "dhcp") == 0) {
+                mode_desc = "DHCP";
+            } else if (mode != NULL && strcmp(mode, "static") == 0) {
+                mode_desc = "static";
+            }
+            LOG_INFO("[network] ethernet %s: %s configuration applied", device, mode_desc);
             mg_http_reply(c, 200, "Content-Type: application/json\r\n",
                 "{\"status\":\"success\"}\n");
         } else {
@@ -366,6 +378,7 @@ static void handle_wifi_connect(struct mg_connection *c, struct mg_http_message 
         if (ssid != NULL && strlen(ssid) > 0) {
             int result = wifi_connect(ssid, password);
             if (result == 0) {
+                LOG_INFO("[network] Wi-Fi connect requested ssid=%s", ssid);
                 mg_http_reply(c, 200, "Content-Type: application/json\r\n",
                     "{\"status\":\"success\"}\n");
             } else {
@@ -388,6 +401,8 @@ static void handle_wifi_disconnect(struct mg_connection *c, struct mg_http_messa
         
         int result = wifi_disconnect(device);
         if (result == 0) {
+            LOG_INFO("[network] Wi-Fi disconnect device=%s",
+                (device != NULL && device[0] != '\0') ? device : "default");
             mg_http_reply(c, 200, "Content-Type: application/json\r\n",
                 "{\"status\":\"success\"}\n");
         } else {
@@ -468,18 +483,18 @@ static int parse_gpio_num_from_uri(const struct mg_str uri) {
     snprintf(uri_buf, sizeof(uri_buf), "%.*s", (int) uri.len, uri.buf);
 
     if (sscanf(uri_buf, "/api/gpio/%d/mode", &gpio_num) == 1) {
-        fprintf(stderr, "[GPIO][router] parse uri='%s' -> gpio=%d (mode)\n", uri_buf, gpio_num);
+        LOG_DEBUG("[GPIO][router] parse uri='%s' -> gpio=%d (mode)", uri_buf, gpio_num);
         return gpio_num;
     }
     if (sscanf(uri_buf, "/api/gpio/%d/value", &gpio_num) == 1) {
-        fprintf(stderr, "[GPIO][router] parse uri='%s' -> gpio=%d (value)\n", uri_buf, gpio_num);
+        LOG_DEBUG("[GPIO][router] parse uri='%s' -> gpio=%d (value)", uri_buf, gpio_num);
         return gpio_num;
     }
     if (sscanf(uri_buf, "/api/gpio/%d", &gpio_num) == 1) {
-        fprintf(stderr, "[GPIO][router] parse uri='%s' -> gpio=%d (pin)\n", uri_buf, gpio_num);
+        LOG_DEBUG("[GPIO][router] parse uri='%s' -> gpio=%d (pin)", uri_buf, gpio_num);
         return gpio_num;
     }
-    fprintf(stderr, "[GPIO][router] failed to parse uri='%s'\n", uri_buf);
+    LOG_DEBUG("[GPIO][router] failed to parse uri='%s'", uri_buf);
     return -1;
 }
 
@@ -513,7 +528,7 @@ static void handle_gpio_mode(struct mg_connection *c, struct mg_http_message *hm
         int gpio_num = parse_gpio_num_from_uri(hm->uri);
         
         if (gpio_num < 0 || !gpio_is_supported(gpio_num)) {
-            fprintf(stderr, "[GPIO][router] mode request rejected: gpio=%d supported=%d\n",
+            LOG_INFO("[GPIO][router] mode request rejected: gpio=%d supported=%d",
                 gpio_num, gpio_is_supported(gpio_num));
             mg_http_reply(c, 400, "Content-Type: application/json\r\n",
                 "{\"error\":\"Invalid or unsupported GPIO pin\"}\n");
@@ -522,27 +537,32 @@ static void handle_gpio_mode(struct mg_connection *c, struct mg_http_message *hm
         
         char *mode = mg_json_get_str(hm->body, "$.mode");
         int result = -1;
-        
+        int initial_value = 0;
+
         if (mode != NULL) {
-            fprintf(stderr, "[GPIO][router] mode request gpio=%d mode=%s\n", gpio_num, mode);
             if (strcmp(mode, "input") == 0) {
                 result = gpio_set_input(gpio_num);
             } else if (strcmp(mode, "output") == 0) {
-                int initial_value = (int) mg_json_get_long(hm->body, "$.initial_value", 0);
+                initial_value = (int) mg_json_get_long(hm->body, "$.initial_value", 0);
                 if (initial_value != 0 && initial_value != 1) {
                     initial_value = 0;
                 }
                 result = gpio_set_output(gpio_num, initial_value);
-                fprintf(stderr, "[GPIO][router] mode output gpio=%d initial=%d result=%d errno=%d\n",
-                    gpio_num, initial_value, result, errno);
             }
         }
-        
+
         if (result == 0) {
+            if (mode != NULL && strcmp(mode, "input") == 0) {
+                LOG_INFO("[GPIO] gpio=%d configured as input", gpio_num);
+            } else if (mode != NULL && strcmp(mode, "output") == 0) {
+                LOG_INFO("[GPIO] gpio=%d configured as output initial=%d", gpio_num, initial_value);
+            } else if (mode != NULL) {
+                LOG_INFO("[GPIO] gpio=%d mode=%s applied", gpio_num, mode);
+            }
             mg_http_reply(c, 200, "Content-Type: application/json\r\n",
                 "{\"status\":\"success\"}\n");
         } else {
-            fprintf(stderr, "[GPIO][router] mode set failed gpio=%d mode=%s result=%d errno=%d\n",
+            LOG_ERROR("[GPIO][router] mode set failed gpio=%d mode=%s result=%d errno=%d",
                 gpio_num, mode ? mode : "(null)", result, errno);
             mg_http_reply(c, 503, "Content-Type: application/json\r\n",
                 "{\"status\":\"error\",\"message\":\"Failed to set GPIO mode\",\"hint\":\"%s\"}\n", GPIO_HINT);
@@ -557,7 +577,7 @@ static void handle_gpio_value(struct mg_connection *c, struct mg_http_message *h
         int gpio_num = parse_gpio_num_from_uri(hm->uri);
         
         if (gpio_num < 0 || !gpio_is_supported(gpio_num)) {
-            fprintf(stderr, "[GPIO][router] value request rejected: gpio=%d supported=%d\n",
+            LOG_INFO("[GPIO][router] value request rejected: gpio=%d supported=%d",
                 gpio_num, gpio_is_supported(gpio_num));
             mg_http_reply(c, 400, "Content-Type: application/json\r\n",
                 "{\"error\":\"Invalid or unsupported GPIO pin\"}\n");
@@ -576,6 +596,8 @@ static void handle_gpio_value(struct mg_connection *c, struct mg_http_message *h
         int gpio_num = parse_gpio_num_from_uri(hm->uri);
         
         if (gpio_num < 0 || !gpio_is_supported(gpio_num)) {
+            LOG_INFO("[GPIO][router] value POST rejected: gpio=%d supported=%d",
+                gpio_num, gpio_is_supported(gpio_num));
             mg_http_reply(c, 400, "Content-Type: application/json\r\n",
                 "{\"error\":\"Invalid or unsupported GPIO pin\"}\n");
             return;
@@ -590,12 +612,13 @@ static void handle_gpio_value(struct mg_connection *c, struct mg_http_message *h
         }
         
         int result = gpio_set_value(gpio_num, value);
-        fprintf(stderr, "[GPIO][router] set value gpio=%d value=%d result=%d errno=%d\n",
-            gpio_num, value, result, errno);
         if (result == 0) {
+            LOG_INFO("[GPIO] gpio=%d output value set to %d", gpio_num, value);
             mg_http_reply(c, 200, "Content-Type: application/json\r\n",
                 "{\"status\":\"success\"}\n");
         } else {
+            LOG_ERROR("[GPIO][router] set value failed gpio=%d value=%d result=%d errno=%d",
+                gpio_num, value, result, errno);
             mg_http_reply(c, 503, "Content-Type: application/json\r\n",
                 "{\"status\":\"error\",\"message\":\"Failed to set GPIO value\",\"hint\":\"%s\"}\n", GPIO_HINT);
         }
@@ -620,6 +643,8 @@ static const char *drive_to_str(int drive) {
 static void handle_gpio_attrs(struct mg_connection *c, struct mg_http_message *hm) {
     int gpio_num = parse_gpio_num_from_uri(hm->uri);
     if (gpio_num < 0 || !gpio_is_supported(gpio_num)) {
+        LOG_INFO("[GPIO] attrs request rejected: gpio=%d supported=%d",
+            gpio_num, gpio_is_supported(gpio_num));
         mg_http_reply(c, 400, "Content-Type: application/json\r\n",
             "{\"error\":\"Invalid or unsupported GPIO pin\"}\n");
         return;
@@ -653,6 +678,7 @@ static void handle_gpio_attrs(struct mg_connection *c, struct mg_http_message *h
         }
 
         if (has_pull && gpio_set_pull(gpio_num, pull) != 0) {
+            LOG_ERROR("[GPIO] gpio=%d failed to set pull=%s", gpio_num, pull);
             mg_http_reply(c, 400, "Content-Type: application/json\r\n",
                 "{\"status\":\"error\",\"message\":\"Failed to set pull\"}\n");
             if (pull) free(pull);
@@ -660,12 +686,18 @@ static void handle_gpio_attrs(struct mg_connection *c, struct mg_http_message *h
             return;
         }
         if (has_drive && gpio_set_drive(gpio_num, drive) != 0) {
+            LOG_ERROR("[GPIO] gpio=%d failed to set drive=%s", gpio_num, drive);
             mg_http_reply(c, 400, "Content-Type: application/json\r\n",
                 "{\"status\":\"error\",\"message\":\"Failed to set drive mode\"}\n");
             if (pull) free(pull);
             if (drive) free(drive);
             return;
         }
+
+        LOG_INFO("[GPIO] gpio=%d attrs updated pull=%s drive=%s",
+            gpio_num,
+            has_pull ? pull : "(unchanged)",
+            has_drive ? drive : "(unchanged)");
 
         if (pull) free(pull);
         if (drive) free(drive);
@@ -821,6 +853,7 @@ static void handle_reboot(struct mg_connection *c, struct mg_http_message *hm) {
     if (mg_match(hm->method, mg_str("POST"), NULL)) {
         // POST /api/system/reboot
         // 执行重启命令（需要 root 权限）
+        LOG_INFO("[system] reboot requested via API");
         int result = system("sudo reboot");
         if (result == 0) {
             // 命令执行成功（虽然可能不会返回，因为系统会重启）
@@ -840,6 +873,7 @@ static void handle_shutdown(struct mg_connection *c, struct mg_http_message *hm)
     if (mg_match(hm->method, mg_str("POST"), NULL)) {
         // POST /api/system/shutdown
         // 执行关闭命令（需要 root 权限）
+        LOG_INFO("[system] shutdown requested via API");
         int result = system("sudo shutdown -h now");
         if (result == 0) {
             // 命令执行成功（虽然可能不会返回，因为系统会关闭）

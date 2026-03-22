@@ -12,7 +12,7 @@ build/cmake_install.cmake
 build/Makefile
 
 # 安装目录
-bin/
+deploy/
 
 # 可执行文件名称
 piduier
