@@ -1264,10 +1264,10 @@ async function saveGpioAttrs() {
     const form = document.getElementById('gpio-attrs-modal');
     if (!pullField || !driveField || !form) return;
 
-    const payload = {
-        pull: pullField.value,
-        drive: driveField.value
-    };
+    const payload = { pull: pullField.value };
+    if (gpioData.mode === 'output') {
+        payload.drive = driveField.value;
+    }
 
     try {
         const response = await fetch(`${API_BASE}/api/gpio/${currentAttrGpio}/attrs`, {

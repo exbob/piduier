@@ -1,4 +1,5 @@
 #include "gpio.h"
+#include "util/log.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -33,6 +34,9 @@ void gpio_status_free(gpio_status_t *status) {
 }
 
 static int run_cmd(const char *cmd) {
+    if (cmd != NULL && strstr(cmd, "pinctrl set") != NULL) {
+        LOG_INFO("[GPIO][pinctrl] executing: %s", cmd);
+    }
     int rc = system(cmd);
     if (rc == -1) return -1;
     if (WIFEXITED(rc) && WEXITSTATUS(rc) == 0) return 0;
@@ -263,6 +267,17 @@ int gpio_set_drive(int gpio_num, const char *drive) {
     }
     if (drive == NULL || (strcmp(drive, "dh") != 0 && strcmp(drive, "dl") != 0)) {
         return -1;
+    }
+
+    gpio_mode_t mode = GPIO_MODE_UNKNOWN;
+    gpio_value_t value = GPIO_VALUE_UNKNOWN;
+    if (pinctrl_get_state(gpio_num, &mode, &value) != 0) {
+        return -1;
+    }
+    if (mode != GPIO_MODE_OUTPUT) {
+        LOG_INFO("[GPIO][pinctrl] skip drive for gpio %d: dh/dl only apply to output (current mode=input or unknown)",
+            gpio_num);
+        return 0;
     }
 
     char cmd[64];
