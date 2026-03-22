@@ -1,3 +1,4 @@
+#include "config/app_config.h"
 #include "mongoose.h"
 #include "http/router.h"
 #include "system/cpu.h"
@@ -14,6 +15,13 @@
 #ifndef PIDUIER_BUILD_ARCH
 #define PIDUIER_BUILD_ARCH "unknown"
 #endif
+
+static piduier_config_t g_cfg;
+
+static void piduier_exit_cleanup(void) {
+	log_fini();
+	piduier_config_free(&g_cfg);
+}
 
 // Connection event handler function
 static void ev_handler(struct mg_connection *c, int ev, void *ev_data)
@@ -51,39 +59,24 @@ static void *cpu_monitor_thread(void *arg) {
 static void print_usage(FILE *fp) {
     fprintf(fp,
             "Usage: piduier [options]\n"
-            "  -c, --zlog-conf PATH   zlog configuration file (default: ./zlog.conf)\n"
-            "  -l, --log-file PATH    log file for Release file rules (default: ./piduier.log)\n"
-            "  -h, --help             show this help\n"
-            "\n"
-            "Environment:\n"
-            "  PIDUIER_ZLOG_CONF      same as --zlog-conf if no -c/--zlog-conf\n"
-            "  PIDUIER_LOG_FILE       same as --log-file if no -l/--log-file\n");
+            "  -f, --config PATH   application config (JSON), default: ./piduier.conf\n"
+            "  -h, --help          show this help\n");
 }
 
-static int parse_args(int argc, char **argv, const char **zlog_conf_out,
-                      const char **log_file_out) {
-    const char *zlog_conf = NULL;
-    const char *log_file = NULL;
+static int parse_args(int argc, char **argv, const char **config_path_out) {
+    const char *config_path = NULL;
 
     for (int i = 1; i < argc; i++) {
         if (strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "--help") == 0) {
             print_usage(stdout);
             return 2;
         }
-        if (strcmp(argv[i], "-c") == 0 || strcmp(argv[i], "--zlog-conf") == 0) {
+        if (strcmp(argv[i], "-f") == 0 || strcmp(argv[i], "--config") == 0) {
             if (i + 1 >= argc) {
                 fprintf(stderr, "piduier: %s requires a path\n", argv[i]);
                 return -1;
             }
-            zlog_conf = argv[++i];
-            continue;
-        }
-        if (strcmp(argv[i], "-l") == 0 || strcmp(argv[i], "--log-file") == 0) {
-            if (i + 1 >= argc) {
-                fprintf(stderr, "piduier: %s requires a path\n", argv[i]);
-                return -1;
-            }
-            log_file = argv[++i];
+            config_path = argv[++i];
             continue;
         }
         fprintf(stderr, "piduier: unknown option: %s\n", argv[i]);
@@ -91,39 +84,18 @@ static int parse_args(int argc, char **argv, const char **zlog_conf_out,
         return -1;
     }
 
-    if (zlog_conf == NULL || zlog_conf[0] == '\0') {
-        const char *e = getenv("PIDUIER_ZLOG_CONF");
-        if (e != NULL && e[0] != '\0') {
-            zlog_conf = e;
-        } else {
-            zlog_conf = "./zlog.conf";
-        }
+    if (config_path == NULL || config_path[0] == '\0') {
+        config_path = "./piduier.conf";
     }
 
-    if (log_file == NULL || log_file[0] == '\0') {
-        const char *e = getenv("PIDUIER_LOG_FILE");
-        if (e != NULL && e[0] != '\0') {
-            log_file = e;
-        } else {
-            log_file = "./piduier.log";
-        }
-    }
-
-    if (setenv("PIDUIER_LOG_FILE", log_file, 1) != 0) {
-        fprintf(stderr, "piduier: setenv(PIDUIER_LOG_FILE) failed\n");
-        return -1;
-    }
-
-    *zlog_conf_out = zlog_conf;
-    *log_file_out = log_file;
+    *config_path_out = config_path;
     return 0;
 }
 
 int main(int argc, char **argv)
 {
-    const char *zlog_conf;
-    const char *log_file;
-    int prc = parse_args(argc, argv, &zlog_conf, &log_file);
+    const char *config_path;
+    int prc = parse_args(argc, argv, &config_path);
     if (prc < 0) {
         return EXIT_FAILURE;
     }
@@ -131,19 +103,34 @@ int main(int argc, char **argv)
         return EXIT_SUCCESS;
     }
 
-	if (log_init(zlog_conf) != 0) {
+	char err[512];
+	if (piduier_config_load(config_path, &g_cfg, err, sizeof(err)) != 0) {
+		fprintf(stderr, "piduier: config error: %s\n", err);
 		return EXIT_FAILURE;
 	}
-	atexit(log_fini);
 
-	LOG_INFO("piduier starting version=%s arch=%s zlog_conf=%s log_file=%s",
-	         PIDUIER_VERSION, PIDUIER_BUILD_ARCH, zlog_conf, log_file);
+	if (log_init(g_cfg.zlog_ini) != 0) {
+		piduier_config_free(&g_cfg);
+		return EXIT_FAILURE;
+	}
+	atexit(piduier_exit_cleanup);
+
+	LOG_INFO("piduier starting version=%s arch=%s config=%s http_listen=%s http_port=%d log_file=%s",
+	         PIDUIER_VERSION, PIDUIER_BUILD_ARCH, config_path,
+	         g_cfg.http_listen, g_cfg.http_port, g_cfg.log_file);
 
 #ifdef PIDUIER_DEBUG_LOG
 	mg_log_set(MG_LL_DEBUG);
 #else
 	mg_log_set(MG_LL_INFO);
 #endif
+
+	char listen_url[320];
+	if (snprintf(listen_url, sizeof(listen_url), "http://%s:%d",
+	             g_cfg.http_listen, g_cfg.http_port) >= (int)sizeof(listen_url)) {
+		LOG_ERROR("listen URL too long");
+		return EXIT_FAILURE;
+	}
 
 	struct mg_mgr mgr; // Mongoose event manager. Holds all connections
 	mg_mgr_init(&mgr); // Initialise event manager
@@ -155,8 +142,8 @@ int main(int argc, char **argv)
 	pthread_detach(cpu_thread);
 	LOG_INFO("CPU monitor thread started");
 
-	mg_http_listen(&mgr, "http://0.0.0.0:8000", ev_handler, NULL);
-	LOG_INFO("HTTP server listening on http://0.0.0.0:8000");
+	mg_http_listen(&mgr, listen_url, ev_handler, NULL);
+	LOG_INFO("HTTP server listening on %s", listen_url);
 	// HTTPS 暂时禁用，需要证书
 	// mg_http_listen(&mgr, "https://0.0.0.0:8443", ev_handler, NULL);
 	

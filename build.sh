@@ -60,7 +60,7 @@ case ${1} in
                 fi
 
                 echo "安装到 ${INSTALL_PREFIX}/ ..."
-                rm -f "${INSTALL_PREFIX}/zlog.conf"
+                rm -f "${INSTALL_PREFIX}/zlog.conf" "${INSTALL_PREFIX}/piduier.conf"
                 cmake --install ${BUILD_DIR} --prefix ${INSTALL_PREFIX}
                 if [ $? -ne 0 ]; then
                     echo "Install failed."
@@ -74,9 +74,9 @@ case ${1} in
                 echo "CMake 生成文件位置: ${BUILD_DIR}/"
                 echo "可执行文件位置: ${INSTALL_PREFIX}/piduier"
                 echo "Web 文件位置: ${INSTALL_PREFIX}/web/"
-                echo "zlog 配置: ${INSTALL_PREFIX}/zlog.conf (stdout + DEBUG)"
+                echo "应用配置: ${INSTALL_PREFIX}/piduier.conf (JSON，含 http_listen/http_port 与 zlog；Debug 日志 stdout)"
                 echo ""
-                echo "运行方式（需在含 zlog.conf 的目录启动，或使用 cwd 下的 ./zlog.conf）:"
+                echo "运行方式（需在含 piduier.conf 的目录启动，默认读取 ./piduier.conf）:"
                 echo "  cd ${INSTALL_PREFIX} && ./piduier"
                 ;;
         *)
@@ -98,7 +98,7 @@ case ${1} in
                 fi
 
                 echo "安装到 ${INSTALL_PREFIX}/ ..."
-                rm -f "${INSTALL_PREFIX}/zlog.conf"
+                rm -f "${INSTALL_PREFIX}/zlog.conf" "${INSTALL_PREFIX}/piduier.conf"
                 cmake --install ${BUILD_DIR} --prefix ${INSTALL_PREFIX}
                 if [ $? -ne 0 ]; then
                     echo "Install failed."
@@ -112,7 +112,7 @@ case ${1} in
                 echo "CMake 生成文件位置: ${BUILD_DIR}/"
                 echo "可执行文件位置: ${INSTALL_PREFIX}/piduier"
                 echo "Web 文件位置: ${INSTALL_PREFIX}/web/"
-                echo "zlog 配置: ${INSTALL_PREFIX}/zlog.conf (ERROR/INFO -> ./piduier.log in cwd)"
+                echo "应用配置: ${INSTALL_PREFIX}/piduier.conf (JSON；Release 日志见其中 zlog.log_file)"
                 echo ""
                 echo "运行方式:"
                 case ${ARCH} in

@@ -59,9 +59,14 @@ target_include_directories(zlog PUBLIC ${CMAKE_SOURCE_DIR}/src/third_party/zlog/
 target_link_libraries(zlog PUBLIC pthread)
 target_compile_options(zlog PRIVATE -Wno-sign-compare -Wno-unused-parameter)
 
+# cJSON 1.7.19 (vendored)
+add_library(cjson STATIC src/third_party/cjson/cJSON.c)
+target_include_directories(cjson PUBLIC ${CMAKE_SOURCE_DIR}/src/third_party/cjson)
+
 # 添加源文件
 set(SOURCES
     src/main.c
+    src/config/app_config.c
     src/util/log.c
     src/http/router.c
     src/http/mongoose_log.c
@@ -91,6 +96,7 @@ endif()
 # 包含目录
 target_include_directories(piduier PRIVATE
     src
+    src/config
     src/util
     src/third_party/mongoose
     src/third_party/zlog/src
@@ -101,7 +107,7 @@ target_include_directories(piduier PRIVATE
 )
 
 # 链接库
-target_link_libraries(piduier PRIVATE zlog pthread)
+target_link_libraries(piduier PRIVATE cjson zlog pthread m)
 
 # 安装到 prefix（build.sh 使用 --prefix ./deploy）
 install(TARGETS piduier
@@ -118,11 +124,11 @@ install(DIRECTORY web/
 )
 
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-    install(FILES ${CMAKE_SOURCE_DIR}/config/zlog/zlog_debug.conf
+    install(FILES ${CMAKE_SOURCE_DIR}/config/piduier_debug.json
         DESTINATION .
-        RENAME zlog.conf)
+        RENAME piduier.conf)
 else()
-    install(FILES ${CMAKE_SOURCE_DIR}/config/zlog/zlog_release.conf
+    install(FILES ${CMAKE_SOURCE_DIR}/config/piduier_release.json
         DESTINATION .
-        RENAME zlog.conf)
+        RENAME piduier.conf)
 endif()

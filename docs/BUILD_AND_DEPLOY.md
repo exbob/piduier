@@ -25,7 +25,7 @@ This generates under `./deploy/`:
 
 - `./deploy/piduier`
 - `./deploy/web/`
-- `./deploy/zlog.conf` (zlog config; Release writes log file from env `PIDUIER_LOG_FILE`, default `./piduier.log` in cwd; override with `-l` / `PIDUIER_LOG_FILE`. Debug uses stdout.)
+- `./deploy/piduier.conf` (JSON application config: `http_listen`, `http_port`, and structured `zlog` including `log_file`; Release logs to the path in `zlog.log_file`, typically `./piduier.log` in cwd. Debug uses stdout for logs. No environment variables.)
 
 ## 2) Deploy
 
@@ -50,11 +50,11 @@ If SSH keys are not configured, the terminal will prompt for password interactiv
 
 ## 3) Run on target
 
-Run from the directory that contains `zlog.conf` (same folder as `piduier` after deploy), or pass paths explicitly:
+Run from the directory that contains `piduier.conf` (same folder as `piduier` after deploy), or pass the config path:
 
 ```bash
-./piduier --zlog-conf /path/to/zlog.conf --log-file /path/to/piduier.log
-# or: PIDUIER_ZLOG_CONF=... PIDUIER_LOG_FILE=... ./piduier
+./piduier --config /path/to/piduier.conf
+# short: ./piduier -f /path/to/piduier.conf
 ```
 
 Example on device:

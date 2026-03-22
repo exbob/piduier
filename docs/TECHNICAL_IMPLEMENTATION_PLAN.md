@@ -174,7 +174,7 @@ add_definitions(-DPIDUIER_VERSION="${PIDUIER_VERSION}")
 
 ### 7.1 阶段 A — 构建（仅在本机执行）
 
-- **x86（UI/联调）**：`./build.sh` 或 `ARCH=x86 ./build.sh` → 产物在仓库内 `./deploy/piduier`、`./deploy/web/` 与 `./deploy/zlog.conf`。`./build.sh debug` 为 Debug 构建（DEBUG 日志到终端）。GPIO 使用 pinctrl 后端。
+- **x86（UI/联调）**：`./build.sh` 或 `ARCH=x86 ./build.sh` → 产物在仓库内 `./deploy/piduier`、`./deploy/web/` 与 **`./deploy/piduier.conf`**（JSON，含 `http_listen`/`http_port`/`zlog`）。`./build.sh debug` 为 Debug 构建（DEBUG 日志到终端）。GPIO 使用 pinctrl 后端。
 - **树莓派 5 目标架构（交叉编译）**：在同一台开发机上执行 `ARCH=arm64 ./build.sh`，**仅生成** ARM64 可执行文件与静态资源，**不**在本步骤访问 SSH 或目标机。
 - 依赖与编译选项见 `README.md`、`build.sh`、`CMakeLists.txt`。
 
@@ -191,7 +191,7 @@ add_definitions(-DPIDUIER_VERSION="${PIDUIER_VERSION}")
 ```bash
 # 示例：仅部署（构建须在此命令之前已完成）
 rsync -avz ./deploy/ user@target-host:~/Desktop/piduier/
-# 或 scp -r ./deploy/piduier ./deploy/web ./deploy/zlog.conf user@target-host:~/Desktop/piduier/
+# 或 scp -r ./deploy/piduier ./deploy/web ./deploy/piduier.conf user@target-host:~/Desktop/piduier/
 ```
 
 - **SSH 密码**：可使用密码认证；执行 `scp`/`rsync`/`ssh` 时由工具 **交互提示输入密码**（不把密码写入脚本、仓库或文档）。若已配置 SSH 密钥，则无需每次输入密码。
@@ -199,7 +199,7 @@ rsync -avz ./deploy/ user@target-host:~/Desktop/piduier/
 
 ```bash
 cd ~/Desktop/piduier
-./piduier   # 或按权限需要的前缀；监听端口见 main.c（默认 8000）
+./piduier   # 或按权限需要的前缀；监听地址与端口见 piduier.conf（http_listen / http_port）
 ```
 
 - **目标机环境**：与 `README.md` 一致——`libgpiod`、启用 I2C/SPI/Serial、`piduier` 组与 udev 等。

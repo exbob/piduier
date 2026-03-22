@@ -1,0 +1,18 @@
+{
+  "http_listen": "0.0.0.0",
+  "http_port": 8000,
+  "zlog": {
+    "log_file": "",
+    "global": {
+      "strict init": "true",
+      "default format": "\"%d(%F %T.%l) %-6V %m%n\""
+    },
+    "formats": {
+      "ts": "\"%d(%F %T.%l) %-6V %m%n\""
+    },
+    "rules": [
+      "piduier.* >stdout; ts",
+      "mongoose.* >stdout; ts"
+    ]
+  }
+}

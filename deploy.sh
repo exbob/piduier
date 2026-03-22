@@ -25,13 +25,13 @@ if [ ! -d "${ARTIFACT_DIR}/web" ]; then
 fi
 
 echo "Deploy target: ${TARGET}:${TARGET_DIR}"
-echo "Artifacts: ${ARTIFACT_DIR}/piduier, ${ARTIFACT_DIR}/web, ${ARTIFACT_DIR}/zlog.conf"
+echo "Artifacts: ${ARTIFACT_DIR}/piduier, ${ARTIFACT_DIR}/web, ${ARTIFACT_DIR}/piduier.conf"
 echo ""
 echo "Step 1/3: Create target directory"
 ssh "${TARGET}" "mkdir -p ${TARGET_DIR}"
 
 echo "Step 2/3: Upload artifacts"
-rsync -avz "${ARTIFACT_DIR}/piduier" "${ARTIFACT_DIR}/web" "${ARTIFACT_DIR}/zlog.conf" "${TARGET}:${TARGET_DIR}/"
+rsync -avz "${ARTIFACT_DIR}/piduier" "${ARTIFACT_DIR}/web" "${ARTIFACT_DIR}/piduier.conf" "${TARGET}:${TARGET_DIR}/"
 
 echo "Step 3/3: Print run command"
 echo "Deployment complete."
