@@ -39,7 +39,7 @@ set(SOURCES
     src/network/ethernet.c
     src/network/wifi.c
     src/hardware/gpio.c
-    mongoose.c
+    src/third_party/mongoose/mongoose.c
 )
 
 # 创建可执行文件
@@ -47,8 +47,8 @@ add_executable(piduier ${SOURCES})
 
 # 包含目录
 target_include_directories(piduier PRIVATE
-    .
     src
+    src/third_party/mongoose
     src/http
     src/system
     src/network
