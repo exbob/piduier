@@ -299,13 +299,15 @@
                 <div class="page-header">
                     <h1 class="page-title">40-pin</h1>
                     <div class="section-note">Debug and validate Raspberry Pi 5 40-pin interfaces</div>
-                    <div class="gpio-conn-status gpio-conn-status-idle" id="gpio-conn-status">
-                        <span class="gpio-conn-dot"></span>
-                        <span id="gpio-conn-text">Idle</span>
+                    <div class="gpio-header-actions">
+                        <div class="gpio-conn-status gpio-conn-status-idle" id="gpio-conn-status">
+                            <span class="gpio-conn-dot"></span>
+                            <span id="gpio-conn-text">Idle</span>
+                        </div>
+                        <button class="btn-icon" id="gpio-refresh-btn">
+                            <span>Refresh</span>
+                        </button>
                     </div>
-                    <button class="btn-icon header-spacer" id="gpio-refresh-btn">
-                        <span>Refresh</span>
-                    </button>
                 </div>
 
                 <!-- 40pin 引脚布局 -->
