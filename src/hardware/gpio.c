@@ -7,7 +7,7 @@
 #include <sys/wait.h>
 
 // 支持的 GPIO 引脚列表
-static const int supported_pins[GPIO_SUPPORTED_PINS_COUNT] = {4, 5, 6, 16, 17, 22, 23, 24, 25, 26, 27};
+static const int supported_pins[GPIO_SUPPORTED_PINS_COUNT] = GPIO_SUPPORTED_PINS;
 
 int gpio_is_supported(int gpio_num) {
     for (int i = 0; i < GPIO_SUPPORTED_PINS_COUNT; i++) {
@@ -61,6 +61,75 @@ static void to_lowercase(char *s) {
         *s = (char) tolower((unsigned char) *s);
         s++;
     }
+}
+
+static int is_valid_pinctrl_func(const char *func) {
+    if (func == NULL) return 0;
+    if (strcmp(func, "ip") == 0 || strcmp(func, "op") == 0 || strcmp(func, "no") == 0) {
+        return 1;
+    }
+    if (func[0] == 'a' && func[1] >= '0' && func[1] <= '8' && func[2] == '\0') {
+        return 1;
+    }
+    return 0;
+}
+
+static int parse_gpio_num_token(const char *token, int *gpio_num) {
+    if (token == NULL || gpio_num == NULL) return -1;
+    char *end = NULL;
+    long num = strtol(token, &end, 10);
+    if (end == token) return -1;
+    if (*end != '\0' && *end != ':') return -1;
+    if (num < 0 || num >= GPIO_SUPPORTED_PINS_COUNT) return -1;
+    *gpio_num = (int) num;
+    return 0;
+}
+
+static int read_pinctrl_functions(char funcs[][GPIO_PINCTRL_FUNC_MAX_LEN]) {
+    char buf[8192];
+    if (run_cmd_output("pinctrl get 2>/dev/null", buf, sizeof(buf)) != 0) {
+        LOG_ERROR("[GPIO][pinctrl] failed to run: pinctrl get");
+        return -1;
+    }
+
+    int seen[GPIO_SUPPORTED_PINS_COUNT] = {0};
+    int seen_count = 0;
+    for (int i = 0; i < GPIO_SUPPORTED_PINS_COUNT; i++) {
+        funcs[i][0] = '\0';
+    }
+
+    char *saveptr = NULL;
+    char *line = strtok_r(buf, "\n", &saveptr);
+    while (line != NULL) {
+        while (*line != '\0' && isspace((unsigned char) *line)) {
+            line++;
+        }
+        if (*line != '\0') {
+            char gpio_token[32];
+            char func_token[16];
+            if (sscanf(line, "%31s %15s", gpio_token, func_token) == 2) {
+                int gpio_num = -1;
+                if (parse_gpio_num_token(gpio_token, &gpio_num) == 0) {
+                    to_lowercase(func_token);
+                    if (is_valid_pinctrl_func(func_token)) {
+                        strcpy(funcs[gpio_num], func_token);
+                        if (!seen[gpio_num]) {
+                            seen[gpio_num] = 1;
+                            seen_count++;
+                        }
+                    }
+                }
+            }
+        }
+        line = strtok_r(NULL, "\n", &saveptr);
+    }
+
+    if (seen_count < GPIO_SUPPORTED_PINS_COUNT) {
+        LOG_ERROR("[GPIO][pinctrl] pinctrl get parsed %d gpio rows, expected %d",
+                  seen_count, GPIO_SUPPORTED_PINS_COUNT);
+        return -1;
+    }
+    return 0;
 }
 
 static int pinctrl_get_state(int gpio_num, gpio_mode_t *mode, gpio_value_t *value) {
@@ -283,6 +352,49 @@ int gpio_set_drive(int gpio_num, const char *drive) {
     char cmd[64];
     snprintf(cmd, sizeof(cmd), "pinctrl set %d op %s", gpio_num, drive);
     return run_cmd(cmd);
+}
+
+int gpio_apply_pinctrl_config(const char pinctrl_funcs[][GPIO_PINCTRL_FUNC_MAX_LEN], size_t pin_count) {
+    if (pinctrl_funcs == NULL || pin_count != GPIO_SUPPORTED_PINS_COUNT) {
+        LOG_ERROR("[GPIO][pinctrl] invalid pinctrl config arguments");
+        return -1;
+    }
+
+    for (size_t i = 0; i < pin_count; i++) {
+        if (!is_valid_pinctrl_func(pinctrl_funcs[i])) {
+            LOG_ERROR("[GPIO][pinctrl] invalid target function for gpio %zu: %s",
+                      i, pinctrl_funcs[i]);
+            return -1;
+        }
+    }
+
+    char current_funcs[GPIO_SUPPORTED_PINS_COUNT][GPIO_PINCTRL_FUNC_MAX_LEN];
+    if (read_pinctrl_functions(current_funcs) != 0) {
+        return -1;
+    }
+
+    for (int gpio = 0; gpio < GPIO_SUPPORTED_PINS_COUNT; gpio++) {
+        const char *target = pinctrl_funcs[gpio];
+        const char *current = current_funcs[gpio];
+
+        if (current[0] == '\0') {
+            LOG_ERROR("[GPIO][pinctrl] missing current function for gpio %d", gpio);
+            return -1;
+        }
+        if (strcmp(current, target) == 0) {
+            LOG_INFO("[GPIO][pinctrl] gpio %d already %s, skip", gpio, target);
+            continue;
+        }
+        char cmd[64];
+        snprintf(cmd, sizeof(cmd), "pinctrl set %d %s", gpio, target);
+        if (run_cmd(cmd) != 0) {
+            LOG_ERROR("[GPIO][pinctrl] failed to set gpio %d: %s -> %s", gpio, current, target);
+            return -1;
+        }
+        LOG_INFO("[GPIO][pinctrl] corrected gpio %d: %s -> %s", gpio, current, target);
+    }
+
+    return 0;
 }
 
 char *gpio_status_to_json(const gpio_status_t *status) {

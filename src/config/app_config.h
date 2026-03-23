@@ -3,6 +3,9 @@
 
 #include <stddef.h>
 
+#define PIDUIER_PINCTRL_GPIO_COUNT 28
+#define PIDUIER_PINCTRL_FUNC_MAX_LEN 4
+
 typedef struct piduier_config {
     char http_listen[256];
     int http_port;
@@ -11,6 +14,8 @@ typedef struct piduier_config {
     char log_file[1024];
     /** malloc'd zlog ini text for zlog_init_from_string; free with piduier_config_free */
     char *zlog_ini;
+    /** pinctrl target function by GPIO index: ip/op/a0~a8/no */
+    char pinctrl[PIDUIER_PINCTRL_GPIO_COUNT][PIDUIER_PINCTRL_FUNC_MAX_LEN];
 } piduier_config_t;
 
 /**

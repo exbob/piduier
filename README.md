@@ -119,9 +119,33 @@ sudo systemctl enable piduier
 - `http_listen`：监听地址（如 `0.0.0.0`）
 - `http_port`：监听端口（如 `8000`）
 - `web_root`：前端静态资源目录
+- `pinctrl`：GPIO0~GPIO27 的目标功能映射（键为 `gpio0`~`gpio27`，值为 `ip`/`op`/`a0`~`a8`/`no`）
 - `zlog.log_file`：日志文件路径（Debug 配置可为空并输出到 stdout）
 
 配置字段缺失或非法时，程序会在启动阶段报错并退出。
+
+`pinctrl` 行为说明：
+
+- 服务启动时会执行 `pinctrl get` 读取 GPIO0~GPIO27 当前功能（每行第二列）。
+- 若当前功能与配置不一致，会自动执行 `pinctrl set <gpio> <func>` 修正。
+- 包括配置值为 `no` 的情况，也会按配置强制下发为 `no`。
+
+### 2.5 Release 与 Debug 配置区别
+
+项目中对应的模板文件分别是：
+
+- `config/piduier_release.json`
+- `config/piduier_debug.json`
+
+主要区别如下：
+
+- 日志输出方式：
+  - Release：写入日志文件（`zlog.log_file` 非空，`rules` 使用 `@LOG_FILE@`）。
+  - Debug：输出到标准输出（`zlog.log_file` 为空，`rules` 使用 `>stdout`）。
+- 使用场景：
+  - Release：适合长期运行和 systemd 托管部署。
+  - Debug：适合开发联调和前台观察实时日志。
+- 其他关键业务配置（如 `http_listen`、`http_port`、`web_root`、`pinctrl`）应保持一致，避免运行行为偏差。
 
 ## 3. 使用
 

@@ -4,8 +4,14 @@
 #include <stddef.h>
 
 // 支持的 GPIO 引脚列表
-#define GPIO_SUPPORTED_PINS_COUNT 11
-#define GPIO_SUPPORTED_PINS {4, 5, 6, 16, 17, 22, 23, 24, 25, 26, 27}
+#define GPIO_SUPPORTED_PINS_COUNT 28
+#define GPIO_SUPPORTED_PINS { \
+    0, 1, 2, 3, 4, 5, 6, 7, \
+    8, 9, 10, 11, 12, 13, 14, 15, \
+    16, 17, 18, 19, 20, 21, 22, 23, \
+    24, 25, 26, 27 \
+}
+#define GPIO_PINCTRL_FUNC_MAX_LEN 4
 
 // GPIO 模式
 typedef enum {
@@ -96,6 +102,11 @@ int gpio_set_pull(int gpio_num, const char *pull);
 // 设置 GPIO drive（dh/dl）
 // 返回 0 成功，-1 失败
 int gpio_set_drive(int gpio_num, const char *drive);
+
+// 启动时按配置校验并修正 GPIO0~GPIO27 的 pinctrl 功能
+// pinctrl_funcs[i] 对应 gpio i，值为 ip/op/a0~a8/no
+// 返回 0 成功，-1 失败
+int gpio_apply_pinctrl_config(const char pinctrl_funcs[][GPIO_PINCTRL_FUNC_MAX_LEN], size_t pin_count);
 
 // 将 GPIO 状态转换为 JSON 字符串
 // 返回分配的字符串，调用者需要 free()

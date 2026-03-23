@@ -7,6 +7,73 @@
 
 #define PLACEHOLDER "@LOG_FILE@"
 
+static void set_err(char *errbuf, size_t errbuf_sz, const char *msg);
+
+static int is_valid_pinctrl_func(const char *func) {
+    if (func == NULL) {
+        return 0;
+    }
+    if (strcmp(func, "ip") == 0 || strcmp(func, "op") == 0 || strcmp(func, "no") == 0) {
+        return 1;
+    }
+    if (func[0] == 'a' && func[1] >= '0' && func[1] <= '8' && func[2] == '\0') {
+        return 1;
+    }
+    return 0;
+}
+
+static int parse_pinctrl_config(const cJSON *root, piduier_config_t *cfg,
+                                char *errbuf, size_t errbuf_sz) {
+    cJSON *pinctrl = cJSON_GetObjectItemCaseSensitive((cJSON *) root, "pinctrl");
+    if (!cJSON_IsObject(pinctrl)) {
+        set_err(errbuf, errbuf_sz, "pinctrl object is required");
+        return -1;
+    }
+
+    for (int i = 0; i < PIDUIER_PINCTRL_GPIO_COUNT; i++) {
+        char key[16];
+        snprintf(key, sizeof(key), "gpio%d", i);
+        cJSON *j_func = cJSON_GetObjectItemCaseSensitive(pinctrl, key);
+        if (!cJSON_IsString(j_func) || j_func->valuestring == NULL) {
+            snprintf(errbuf, errbuf_sz, "pinctrl.%s is required and must be a string", key);
+            return -1;
+        }
+        if (!is_valid_pinctrl_func(j_func->valuestring)) {
+            snprintf(errbuf, errbuf_sz, "pinctrl.%s must be one of ip/op/a0~a8/no", key);
+            return -1;
+        }
+        if (strlen(j_func->valuestring) >= PIDUIER_PINCTRL_FUNC_MAX_LEN) {
+            snprintf(errbuf, errbuf_sz, "pinctrl.%s is too long", key);
+            return -1;
+        }
+        strcpy(cfg->pinctrl[i], j_func->valuestring);
+    }
+
+    const cJSON *ch;
+    cJSON_ArrayForEach(ch, pinctrl) {
+        if (ch->string == NULL) {
+            set_err(errbuf, errbuf_sz, "pinctrl contains an unnamed key");
+            return -1;
+        }
+        if (strncmp(ch->string, "gpio", 4) != 0) {
+            snprintf(errbuf, errbuf_sz, "pinctrl contains invalid key: %s", ch->string);
+            return -1;
+        }
+        char *end = NULL;
+        long idx = strtol(ch->string + 4, &end, 10);
+        if (end == NULL || *end != '\0' || idx < 0 || idx >= PIDUIER_PINCTRL_GPIO_COUNT) {
+            snprintf(errbuf, errbuf_sz, "pinctrl contains invalid key: %s", ch->string);
+            return -1;
+        }
+        if (!cJSON_IsString(ch) || ch->valuestring == NULL || !is_valid_pinctrl_func(ch->valuestring)) {
+            snprintf(errbuf, errbuf_sz, "pinctrl.%s must be one of ip/op/a0~a8/no", ch->string);
+            return -1;
+        }
+    }
+
+    return 0;
+}
+
 static void set_err(char *errbuf, size_t errbuf_sz, const char *msg) {
     if (errbuf != NULL && errbuf_sz > 0) {
         snprintf(errbuf, errbuf_sz, "%s", msg);
@@ -213,6 +280,10 @@ int piduier_config_load(const char *path, piduier_config_t *cfg,
             goto done;
         }
         strcpy(cfg->web_root, j_web_root->valuestring);
+    }
+
+    if (parse_pinctrl_config(root, cfg, errbuf, errbuf_sz) != 0) {
+        goto done;
     }
 
     cJSON *zlog = cJSON_GetObjectItemCaseSensitive(root, "zlog");

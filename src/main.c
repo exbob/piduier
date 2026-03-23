@@ -1,5 +1,6 @@
 #include "config/app_config.h"
 #include "mongoose.h"
+#include "hardware/gpio.h"
 #include "http/router.h"
 #include "system/cpu.h"
 #include "util/log.h"
@@ -121,6 +122,13 @@ int main(int argc, char **argv)
 	LOG_INFO("piduier starting product=\"Raspberry Pi 5 40-pin interface debugging platform\" version=%s arch=%s config=%s http_listen=%s http_port=%d log_file=%s",
 	         PIDUIER_VERSION, PIDUIER_BUILD_ARCH, config_path,
 	         g_cfg.http_listen, g_cfg.http_port, g_cfg.log_file);
+
+    if (gpio_apply_pinctrl_config(g_cfg.pinctrl, PIDUIER_PINCTRL_GPIO_COUNT) != 0) {
+        LOG_ERROR("failed to apply pinctrl config during startup");
+        return EXIT_FAILURE;
+    }
+    LOG_INFO("pinctrl startup verification and correction completed");
+
     router_set_web_root(g_cfg.web_root);
     LOG_INFO("web root set to %s", g_cfg.web_root);
 
