@@ -10,10 +10,10 @@
 BUILD_DIR="./build"
 INSTALL_PREFIX="./deploy"
 
-# 设置架构，默认为 arm64
+# Default architecture: arm64
 ARCH=${ARCH:-arm64}
 
-# 根据 ARCH 设置编译器
+# Select compiler by ARCH
 case ${ARCH} in
         x86|X86)
                 CC="gcc"
@@ -29,20 +29,20 @@ case ${ARCH} in
                 ;;
 esac
 
-# 检查编译器是否存在
+# Ensure compiler exists
 if ! command -v ${CC} > /dev/null 2>&1; then
     echo "Error: Compiler ${CC} not found"
-    echo "Please install the corresponding toolchain"
+    echo "Install the required toolchain first."
     exit 1
 fi
 
 case ${1} in
         clean)
-                echo "Clean..."
+                echo "Cleaning..."
                 rm -vrf ${BUILD_DIR} deploy
                 ;;
         debug)
-                echo "配置 CMake (Debug)..."
+                echo "Configuring (Debug)..."
                 rm -vrf ${BUILD_DIR}
                 cmake -S . -B ${BUILD_DIR} -D CMAKE_C_COMPILER=${CC} \
                     -D CMAKE_BUILD_TYPE=Debug
@@ -52,14 +52,14 @@ case ${1} in
                     exit 1
                 fi
 
-                echo "开始编译..."
+                echo "Building..."
                 cmake --build ${BUILD_DIR} -j$(nproc)
                 if [ $? -ne 0 ]; then
                     echo "Build failed."
                     exit 1
                 fi
 
-                echo "安装到 ${INSTALL_PREFIX}/ ..."
+                echo "Installing to ${INSTALL_PREFIX}/..."
                 rm -f "${INSTALL_PREFIX}/zlog.conf" "${INSTALL_PREFIX}/piduier.conf"
                 cmake --install ${BUILD_DIR} --prefix ${INSTALL_PREFIX}
                 if [ $? -ne 0 ]; then
@@ -68,19 +68,18 @@ case ${1} in
                 fi
 
                 echo ""
-                echo "Debug 编译完成！"
-                echo "Note: This script only builds artifacts."
-                echo "Deployment must be run as a separate step."
-                echo "CMake 生成文件位置: ${BUILD_DIR}/"
-                echo "可执行文件位置: ${INSTALL_PREFIX}/piduier"
-                echo "Web 文件位置: ${INSTALL_PREFIX}/web/"
-                echo "应用配置: ${INSTALL_PREFIX}/piduier.conf (JSON，含 http_listen/http_port 与 zlog；Debug 日志 stdout)"
+                echo "Debug build complete."
+                echo "Build only (no deployment)."
+                echo "Build dir: ${BUILD_DIR}/"
+                echo "Binary: ${INSTALL_PREFIX}/piduier"
+                echo "Web dir: ${INSTALL_PREFIX}/web/"
+                echo "Config: ${INSTALL_PREFIX}/piduier.conf (debug logs to stdout)"
                 echo ""
-                echo "运行方式（需在含 piduier.conf 的目录启动，默认读取 ./piduier.conf）:"
+                echo "Run (from config directory):"
                 echo "  cd ${INSTALL_PREFIX} && ./piduier"
                 ;;
         *)
-                echo "配置 CMake (Release)..."
+                echo "Configuring (Release)..."
                 rm -vrf ${BUILD_DIR}
                 cmake -S . -B ${BUILD_DIR} -D CMAKE_C_COMPILER=${CC} \
                     -D CMAKE_BUILD_TYPE=Release
@@ -90,14 +89,14 @@ case ${1} in
                     exit 1
                 fi
 
-                echo "开始编译..."
+                echo "Building..."
                 cmake --build ${BUILD_DIR} -j$(nproc)
                 if [ $? -ne 0 ]; then
                     echo "Build failed."
                     exit 1
                 fi
 
-                echo "安装到 ${INSTALL_PREFIX}/ ..."
+                echo "Installing to ${INSTALL_PREFIX}/..."
                 rm -f "${INSTALL_PREFIX}/zlog.conf" "${INSTALL_PREFIX}/piduier.conf"
                 cmake --install ${BUILD_DIR} --prefix ${INSTALL_PREFIX}
                 if [ $? -ne 0 ]; then
@@ -106,25 +105,24 @@ case ${1} in
                 fi
 
                 echo ""
-                echo "编译完成！"
-                echo "Note: This script only builds artifacts."
-                echo "Deployment must be run as a separate step."
-                echo "CMake 生成文件位置: ${BUILD_DIR}/"
-                echo "可执行文件位置: ${INSTALL_PREFIX}/piduier"
-                echo "Web 文件位置: ${INSTALL_PREFIX}/web/"
-                echo "应用配置: ${INSTALL_PREFIX}/piduier.conf (JSON；Release 日志见其中 zlog.log_file)"
+                echo "Release build complete."
+                echo "Build only (no deployment)."
+                echo "Build dir: ${BUILD_DIR}/"
+                echo "Binary: ${INSTALL_PREFIX}/piduier"
+                echo "Web dir: ${INSTALL_PREFIX}/web/"
+                echo "Config: ${INSTALL_PREFIX}/piduier.conf (see zlog.log_file)"
                 echo ""
-                echo "运行方式:"
+                echo "Run:"
                 case ${ARCH} in
                         ARM64|arm64|aarch64)
-                                echo "  注意: ARM64 版本需要在 ARM64 设备上运行，或使用 qemu 模拟"
+                                echo "  Note: ARM64 binary needs ARM64 host or qemu."
                                 echo "  cd ${INSTALL_PREFIX} && ./piduier"
-                                echo "  或使用 root 权限: cd ${INSTALL_PREFIX} && sudo ./piduier"
-                                echo "  或使用 qemu: qemu-aarch64 -L /usr/aarch64-linux-gnu ${INSTALL_PREFIX}/piduier"
+                                echo "  Or run as root: cd ${INSTALL_PREFIX} && sudo ./piduier"
+                                echo "  Or use qemu: qemu-aarch64 -L /usr/aarch64-linux-gnu ${INSTALL_PREFIX}/piduier"
                                 ;;
                         *)
                                 echo "  cd ${INSTALL_PREFIX} && ./piduier"
-                                echo "  或使用 root 权限: cd ${INSTALL_PREFIX} && sudo ./piduier"
+                                echo "  Or run as root: cd ${INSTALL_PREFIX} && sudo ./piduier"
                                 ;;
                 esac
                 ;;
