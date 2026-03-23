@@ -7,8 +7,6 @@
 #include "../system/temperature.h"
 #include "../system/storage.h"
 #include "../network/network_manager.h"
-#include "../network/ethernet.h"
-#include "../network/wifi.h"
 #include "../hardware/gpio.h"
 #include "../util/log.h"
 #include <errno.h>
@@ -272,145 +270,6 @@ static void handle_network_devices(struct mg_connection *c, struct mg_http_messa
         }
         
         network_device_list_free(&list);
-    }
-}
-
-static void handle_ethernet_config(struct mg_connection *c, struct mg_http_message *hm) {
-    if (mg_match(hm->method, mg_str("GET"), NULL)) {
-        const char *device = "eth0";
-        char device_buf[16] = {0};
-        if (mg_http_get_var(&hm->query, "device", device_buf, sizeof(device_buf)) > 0) {
-            device = device_buf;
-        }
-        
-        ethernet_config_t config;
-        if (ethernet_get_config(device, &config) == 0) {
-            char *json = ethernet_config_to_json(&config);
-            if (json != NULL) {
-                mg_http_reply(c, 200, "Content-Type: application/json\r\n", "%s\n", json);
-                free(json);
-            } else {
-                mg_http_reply(c, 500, "Content-Type: application/json\r\n",
-                    "{\"error\":\"Failed to generate JSON\"}\n");
-            }
-        } else {
-            mg_http_reply(c, 500, "Content-Type: application/json\r\n",
-                "{\"error\":\"Failed to get ethernet config\"}\n");
-        }
-    } else if (mg_match(hm->method, mg_str("POST"), NULL)) {
-        const char *device = "eth0";
-        char *device_param = mg_json_get_str(hm->body, "$.device");
-        if (device_param != NULL && strlen(device_param) > 0) {
-            device = device_param;
-        }
-        
-        char *mode = mg_json_get_str(hm->body, "$.mode");
-        
-        int result = -1;
-        if (mode != NULL && strcmp(mode, "dhcp") == 0) {
-            result = ethernet_set_dhcp(device, NULL);
-        } else if (mode != NULL && strcmp(mode, "static") == 0) {
-            char *ip = mg_json_get_str(hm->body, "$.ip");
-            char *netmask = mg_json_get_str(hm->body, "$.netmask");
-            char *gateway = mg_json_get_str(hm->body, "$.gateway");
-            char *dns1 = mg_json_get_str(hm->body, "$.dns[0]");
-            char *dns2 = mg_json_get_str(hm->body, "$.dns[1]");
-            
-            if (ip != NULL) {
-                result = ethernet_set_static(device, NULL, ip, netmask, gateway, dns1, dns2);
-            }
-            
-            if (ip) free(ip);
-            if (netmask) free(netmask);
-            if (gateway) free(gateway);
-            if (dns1) free(dns1);
-            if (dns2) free(dns2);
-        }
-        
-        if (result == 0) {
-            const char *mode_desc = "(unknown)";
-            if (mode != NULL && strcmp(mode, "dhcp") == 0) {
-                mode_desc = "DHCP";
-            } else if (mode != NULL && strcmp(mode, "static") == 0) {
-                mode_desc = "static";
-            }
-            LOG_INFO("[network] ethernet %s: %s configuration applied", device, mode_desc);
-            mg_http_reply(c, 200, "Content-Type: application/json\r\n",
-                "{\"status\":\"success\"}\n");
-        } else {
-            mg_http_reply(c, 400, "Content-Type: application/json\r\n",
-                "{\"status\":\"error\",\"message\":\"Failed to configure ethernet\"}\n");
-        }
-        
-        if (device_param) free(device_param);
-        if (mode) free(mode);
-    }
-}
-
-static void handle_wifi_scan(struct mg_connection *c, struct mg_http_message *hm) {
-    if (mg_match(hm->method, mg_str("GET"), NULL)) {
-        wifi_network_list_t list;
-        wifi_network_list_init(&list);
-        
-        if (wifi_scan(&list) == 0) {
-            char *json = wifi_network_list_to_json(&list);
-            if (json != NULL) {
-                mg_http_reply(c, 200, "Content-Type: application/json\r\n", "%s\n", json);
-                free(json);
-            } else {
-                mg_http_reply(c, 500, "Content-Type: application/json\r\n",
-                    "{\"error\":\"Failed to generate JSON\"}\n");
-            }
-        } else {
-            mg_http_reply(c, 500, "Content-Type: application/json\r\n",
-                "{\"error\":\"Failed to scan WiFi\"}\n");
-        }
-        
-        wifi_network_list_free(&list);
-    }
-}
-
-static void handle_wifi_connect(struct mg_connection *c, struct mg_http_message *hm) {
-    if (mg_match(hm->method, mg_str("POST"), NULL)) {
-        char *ssid = mg_json_get_str(hm->body, "$.ssid");
-        char *password = mg_json_get_str(hm->body, "$.password");
-        
-        if (ssid != NULL && strlen(ssid) > 0) {
-            int result = wifi_connect(ssid, password);
-            if (result == 0) {
-                LOG_INFO("[network] Wi-Fi connect requested ssid=%s", ssid);
-                mg_http_reply(c, 200, "Content-Type: application/json\r\n",
-                    "{\"status\":\"success\"}\n");
-            } else {
-                mg_http_reply(c, 400, "Content-Type: application/json\r\n",
-                    "{\"status\":\"error\",\"message\":\"Failed to connect WiFi\"}\n");
-            }
-        } else {
-            mg_http_reply(c, 400, "Content-Type: application/json\r\n",
-                "{\"status\":\"error\",\"message\":\"Missing SSID\"}\n");
-        }
-        
-        if (ssid) free(ssid);
-        if (password) free(password);
-    }
-}
-
-static void handle_wifi_disconnect(struct mg_connection *c, struct mg_http_message *hm) {
-    if (mg_match(hm->method, mg_str("POST"), NULL)) {
-        char *device = mg_json_get_str(hm->body, "$.device");
-        
-        int result = wifi_disconnect(device);
-        if (result == 0) {
-            LOG_INFO("[network] Wi-Fi disconnect device=%s",
-                (device != NULL && device[0] != '\0') ? device : "default");
-            mg_http_reply(c, 200, "Content-Type: application/json\r\n",
-                "{\"status\":\"success\"}\n");
-        } else {
-            mg_http_reply(c, 400, "Content-Type: application/json\r\n",
-                "{\"status\":\"error\",\"message\":\"Failed to disconnect WiFi\"}\n");
-        }
-        
-        if (device) free(device);
     }
 }
 
@@ -945,22 +804,6 @@ void router_handle_request(struct mg_connection *c, struct mg_http_message *hm) 
     // 网络设备 API
     else if (mg_match(hm->uri, mg_str("/api/network/devices"), NULL)) {
         handle_network_devices(c, hm);
-    }
-    // 以太网配置 API
-    else if (mg_match(hm->uri, mg_str("/api/network/ethernet/config"), NULL)) {
-        handle_ethernet_config(c, hm);
-    }
-    // Wi-Fi 扫描 API
-    else if (mg_match(hm->uri, mg_str("/api/network/wifi/scan"), NULL)) {
-        handle_wifi_scan(c, hm);
-    }
-    // Wi-Fi 连接 API
-    else if (mg_match(hm->uri, mg_str("/api/network/wifi/connect"), NULL)) {
-        handle_wifi_connect(c, hm);
-    }
-    // Wi-Fi 断开 API
-    else if (mg_match(hm->uri, mg_str("/api/network/wifi/disconnect"), NULL)) {
-        handle_wifi_disconnect(c, hm);
     }
     // GPIO 状态 API
     else if (mg_match(hm->uri, mg_str("/api/gpio/status"), NULL)) {

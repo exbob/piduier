@@ -58,9 +58,11 @@ static void *cpu_monitor_thread(void *arg) {
 
 static void print_usage(FILE *fp) {
     fprintf(fp,
+            "piduier %s (%s)\n"
             "Usage: piduier [options]\n"
             "  -f, --config PATH   application config (JSON), default: ./piduier.conf\n"
-            "  -h, --help          show this help\n");
+            "  -h, --help          show this help\n",
+            PIDUIER_VERSION, PIDUIER_BUILD_ARCH);
 }
 
 static int parse_args(int argc, char **argv, const char **config_path_out) {
