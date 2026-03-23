@@ -10,8 +10,8 @@
 BUILD_DIR="./build"
 INSTALL_PREFIX="./deploy"
 
-# 设置架构，默认为 x86
-ARCH=${ARCH:-x86}
+# 设置架构，默认为 arm64
+ARCH=${ARCH:-arm64}
 
 # 根据 ARCH 设置编译器
 case ${ARCH} in
