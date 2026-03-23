@@ -1,210 +1,153 @@
-# 树莓派监控软件 (piduier)
+# piduier
 
-基于 Mongoose 的树莓派调试软件，定位为 Raspberry Pi 5 40-pin 接口调试平台，用于嵌入式软硬件开发与联调。
+`piduier` 是一个面向 RaspberryPi 5 的 40-pin 接口的调试平台。后端基于 C + Mongoose 提供 HTTP 服务，前端通过 Web UI 提供系统监控和接口调试能力，适用于嵌入式软硬件联调场景。
 
-## 系统环境配置
+## 1. 概述
 
-### 1. 系统依赖安装
+### 功能特性
 
-安装必要的系统软件包：
+**已实现**
+
+- Web 控制台（Dashboard / 40-pin / About）
+- 系统信息展示（主机名、运行时间、系统、架构、时间等）
+- 资源监控（CPU、内存）
+- 网络状态展示（eth0 / wlan0）
+- GPIO 页面与 40-pin 引脚视图
+- 后端配置文件加载与校验（JSON）
+- 支持通过 `systemd` 作为服务运行
+
+**开发中**
+
+- UART 调试页
+- SPI 调试页
+- I2C 调试页
+- PWM 调试页
+- Dashboard 中部分占位指标（如温度、存储）
+
+## 2. 构建
+
+### 2.1 前置依赖
+
+使用交叉编译，在 Debian/Ubuntu 宿主机上可先安装：
 
 ```bash
 sudo apt-get update
 sudo apt-get install -y \
-    libgpiod-dev \
-    network-manager \
-    build-essential \
-    cmake \
-    pkg-config
+  build-essential \
+  cmake \
+  pkg-config \
+  libgpiod-dev \
+  network-manager
 ```
 
-### 2. 硬件接口启用
+如果要在 x86 主机构建 ARM64 版本，还需安装交叉编译器（命令名需包含 `aarch64-linux-gnu-gcc`）。目标机（树莓派5）上，要使用默认的接口配置，然后通过`raspi-config`命令使能SPI，I2C和UART等接口。
 
-使用 `raspi-config` 启用硬件接口：
+### 2.2 构建命令
 
-```bash
-sudo raspi-config
-```
-
-在界面中启用：
-- **SPI**: `Interface Options` → `SPI` → `Enable`
-- **I2C**: `Interface Options` → `I2C` → `Enable`
-- **Serial Port**: `Interface Options` → `Serial Port` → `Enable`（用于 UART）
-
-或者使用命令行：
+项目使用仓库根目录的 `build.sh`：
 
 ```bash
-# 启用 SPI
-sudo raspi-config nonint do_spi 0
-
-# 启用 I2C
-sudo raspi-config nonint do_i2c 0
-
-# 启用串口（UART）
-sudo raspi-config nonint do_serial 0
-```
-
-### 3. 权限配置
-
-统一使用 `piduier` 用户组访问所有硬件接口：
-
-```bash
-# 1. 创建 piduier 组（如果不存在）
-sudo groupadd piduier
-
-# 2. 将用户添加到 piduier 组
-sudo usermod -aG piduier $USER
-
-# 3. 配置 udev 规则（统一使用 piduier 组）
-sudo tee /etc/udev/rules.d/99-piduier.rules > /dev/null <<EOF
-# GPIO
-SUBSYSTEM=="gpio", GROUP="piduier", MODE="0664"
-KERNEL=="gpiochip*", GROUP="piduier", MODE="0664"
-
-# PWM
-SUBSYSTEM=="pwm", GROUP="piduier", MODE="0664"
-KERNEL=="pwmchip*", GROUP="piduier", MODE="0664"
-
-# SPI
-KERNEL=="spidev*", GROUP="piduier", MODE="0664"
-
-# I2C
-KERNEL=="i2c-[0-9]*", GROUP="piduier", MODE="0664"
-
-# UART
-KERNEL=="ttyAMA*", GROUP="piduier", MODE="0664"
-EOF
-
-# 4. 重新加载 udev 规则
-sudo udevadm control --reload-rules
-sudo udevadm trigger
-
-# 5. 重新登录以使组权限生效
-# 或者使用: newgrp piduier
-```
-
-**验证权限**（重新登录后）：
-
-```bash
-# 检查用户组
-groups
-
-# 检查设备权限
-ls -l /dev/gpiochip0
-ls -l /dev/spidev0.0
-ls -l /dev/i2c-1
-ls -l /dev/ttyAMA0
-```
-
-### 4. NetworkManager 服务
-
-确保 NetworkManager 服务正在运行：
-
-```bash
-sudo systemctl status NetworkManager
-sudo systemctl enable NetworkManager
-```
-
-## 编译
-
-支持交叉编译，通过 `ARCH` 环境变量指定架构：
-
-**x86 架构（默认）：**
-```bash
+# 构建 Release 版本（默认 ARCH=arm64）
 ./build.sh
-# 或
+
+# 指定 x86 架构
 ARCH=x86 ./build.sh
-```
 
-**ARM64 架构：**
-```bash
+# 指定 arm64 架构
 ARCH=arm64 ./build.sh
-```
 
-**Debug 构建（日志 DEBUG 级别输出到终端）：**
-```bash
+# 构建 Debug 版本，带调试信息
 ./build.sh debug
-```
 
-**清理构建文件：**
-```bash
+# 清理
 ./build.sh clean
 ```
 
-**说明：**
-- CMake 生成的所有文件都放在 `./build` 目录下（中间文件，不需要部署）
-- 编译后的可执行文件、Web 前端与 **`piduier.conf`（JSON 应用配置）** 会自动安装到 `./deploy/` 目录
-- 默认 **Release**：监听地址与端口、zlog 规则等均由 `piduier.conf` 指定；应用与 Mongoose 通常输出 **ERROR / INFO** 到 `zlog.log_file` 配置的路径（模板默认为当前目录下 `./piduier.log`）
-- **Debug**：含 **DEBUG** 级别，日志输出到 **stdout**（终端），仍由 `piduier.conf` 中的 `zlog` 段描述
-- 每次构建前会自动清理 build 目录，确保使用正确的编译器；安装前会刷新 `deploy/piduier.conf` 以匹配当前构建类型
+构建成功后产物位于 `deploy/`：
 
-**编译产物**：
-```
+```text
 deploy/
-├── piduier          # 可执行文件（主程序）
-├── piduier.conf     # JSON 配置（http_listen / http_port / zlog 等，与构建类型对应）
-├── install.sh       # 目标机安装脚本（安装到 /usr/local 并配置 systemd）
-├── piduier.service  # systemd 服务模板（由 install.sh 安装）
-└── web/             # Web 前端文件目录
-    ├── index.html
-    ├── css/
-    │   └── style.css
-    └── js/
-        └── app.js
+├── piduier          # 可执行文件
+├── piduier.conf     # 运行配置
+├── install.sh       # 安装脚本（目标机执行）
+├── piduier.service  # systemd 服务模板
+├── web/             # Web 静态资源
+└── uninstall.sh     # 卸载脚本（目标机执行）
 ```
 
-**部署到树莓派**：将 `deploy/` 目录下的内容同步到目标机后，在目标机执行 `sudo ./install.sh` 完成安装。详细说明见 `docs/BUILD_AND_DEPLOY.md`
+可以用 `deploy.sh` 脚本把这些文件复制到远程目标机（树莓派5）上，也可以手动复制。调试时，可以直接在目标机上启动 `piduier` ，默认使用当前目录的配置文件 `piduier.conf`。
 
-## 安装与运行（systemd）
+### 2.3 安装与启动
 
-**注意**：
-- 推荐使用安装脚本 + systemd，而不是直接在 `deploy/` 目录运行二进制
-- 安装脚本默认安装前缀为 `/usr/local`，可用 `--prefix` 覆盖
-- 安装前会自动修正配置：`web_root` 与 `zlog.log_file` 路径
-- 网络配置操作需要 root 权限，其他硬件操作使用 `piduier` 组权限
+在目标机用安装脚本部署，用 systemd 启动：
 
 ```bash
-# 1) 本地编译
-ARCH=arm64 ./build.sh
-
-# 2) 发送到目标机
-TARGET=lsc@172.16.1.101 TARGET_DIR=~/Desktop/piduier ./deploy.sh
-
-# 3) 目标机安装（默认前缀 /usr/local）
-ssh lsc@172.16.1.101
-cd ~/Desktop/piduier
+# 进入目标机执行
 sudo ./install.sh
 
-# 4) systemd 管理
+# 可选：自定义安装前缀（默认 /usr/local）
+sudo ./install.sh --prefix /usr/local
+```
+
+安装脚本会完成：
+
+- 二进制安装到 `<prefix>/bin/piduier`
+- 配置安装到 `<prefix>/etc/piduier/piduier.conf`
+- 前端资源安装到 `<prefix>/share/piduier/web`
+- systemd 服务安装到 `/etc/systemd/system/piduier.service`
+- 自动修正配置中的 `web_root` 与 `zlog.log_file` 为安装路径
+
+启动与管理服务：
+
+```bash
+sudo systemctl daemon-reload
 sudo systemctl start piduier
-sudo systemctl stop piduier
 sudo systemctl status piduier
 sudo systemctl enable piduier
 ```
 
-HTTP 监听地址与端口由 **`piduier.conf`** 中的 **`http_listen`**、**`http_port`** 指定（安装模板默认为 `0.0.0.0` / `8000`）。
+### 2.4 配置文件说明
 
-### 配置文件（`piduier.conf`）
-
-- **格式**：JSON。根级必填字段包括 **`http_listen`**（字符串）、**`http_port`**（整数 1–65535）、**`zlog`**（对象）。
-- **`zlog`**：包含结构化 zlog 配置（`global`、`formats`、`rules` 对象/数组）及 **`log_file`**（字符串）。文件类规则中使用占位符 **`@LOG_FILE@`**，启动时替换为 `log_file` 的实际路径；不使用环境变量。
-- **缺失或非法字段**：程序启动前校验失败并打印错误，**无静默默认值**。
-- **命令行**：仅用于指定配置文件路径——**`-f PATH`** 或 **`--config PATH`**（默认 `./piduier.conf`）。不使用环境变量覆盖配置。
-- 查看帮助：`./piduier --help`
-
-示例：
+程序通过 `-f` 或 `--config` 指定配置文件路径（默认 `./piduier.conf`）：
 
 ```bash
-cd deploy
-./piduier
-./piduier --config /etc/piduier/piduier.conf
+./piduier --config /usr/local/etc/piduier/piduier.conf
 ```
 
-仓库内模板：`config/piduier_release.json`、`config/piduier_debug.json`（安装时复制为 `deploy/piduier.conf`）。
+关键字段说明（`piduier.conf`）：
 
-## 使用
+- `http_listen`：监听地址（如 `0.0.0.0`）
+- `http_port`：监听端口（如 `8000`）
+- `web_root`：前端静态资源目录
+- `zlog.log_file`：日志文件路径（Debug 配置可为空并输出到 stdout）
 
-1. 启动服务器后，在浏览器中访问：`http://<树莓派IP>:<http_port>`（默认端口见 `piduier.conf`）
-2. 通过 Web 界面进行系统观测与 40-pin 接口调试：
-   - **Dashboard**: 查看系统信息、CPU/内存使用率、网络状态等
-   - **40-pin Debug**: 对 GPIO、PWM、SPI、I2C、UART 等硬件接口进行调试与联调
+配置字段缺失或非法时，程序会在启动阶段报错并退出。
+
+## 3. 使用
+
+### 3.1 访问 Web 控制台
+
+服务启动后，在浏览器打开：
+
+```text
+http://<设备IP>:<http_port>
+```
+
+其中 `<http_port>` 由配置文件中的 `http_port` 决定（常见为 `8000`）。
+
+### 3.2 主要功能使用
+
+- **Dashboard**
+  - 查看设备基础信息、CPU/内存、网络状态
+  - 支持页面内手动刷新
+  - 提供重启/关机快捷操作按钮
+- **40-pin Debug > GPIO**
+  - 查看 40-pin 引脚布局与状态
+  - 进入 GPIO 页面后执行引脚相关调试操作
+- **About**
+  - 查看软件版本与说明信息
+
+### 3.3 当前功能状态说明
+
+UART / SPI / I2C / PWM 页面当前为开发中状态，界面已预留但完整调试能力尚未开放。  
+使用时请以 Dashboard 与 GPIO 页面能力为主。
