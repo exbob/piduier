@@ -132,3 +132,14 @@ else()
         DESTINATION .
         RENAME piduier.conf)
 endif()
+
+install(PROGRAMS ${CMAKE_SOURCE_DIR}/config/install.sh
+    DESTINATION .
+    RENAME install.sh)
+
+install(PROGRAMS ${CMAKE_SOURCE_DIR}/config/uninstall.sh
+    DESTINATION .
+    RENAME uninstall.sh)
+
+install(FILES ${CMAKE_SOURCE_DIR}/config/piduier.service
+    DESTINATION .)

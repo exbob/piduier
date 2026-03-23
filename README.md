@@ -143,6 +143,8 @@ ARCH=arm64 ./build.sh
 deploy/
 ├── piduier          # 可执行文件（主程序）
 ├── piduier.conf     # JSON 配置（http_listen / http_port / zlog 等，与构建类型对应）
+├── install.sh       # 目标机安装脚本（安装到 /usr/local 并配置 systemd）
+├── piduier.service  # systemd 服务模板（由 install.sh 安装）
 └── web/             # Web 前端文件目录
     ├── index.html
     ├── css/
@@ -151,22 +153,33 @@ deploy/
         └── app.js
 ```
 
-**部署到树莓派**：将 `deploy/` 目录下的内容（含 **`piduier.conf`**）同步到目标机即可。详细说明见 `docs/BUILD_AND_DEPLOY.md`
+**部署到树莓派**：将 `deploy/` 目录下的内容同步到目标机后，在目标机执行 `sudo ./install.sh` 完成安装。详细说明见 `docs/BUILD_AND_DEPLOY.md`
 
-## 运行
+## 安装与运行（systemd）
 
 **注意**：
-- 请在 **`deploy/`** 目录下启动（或保证当前工作目录下存在 **`./piduier.conf`**，通常与 `piduier` 同目录）
-- Web 文件（`index.html` 等）位于 `./deploy/web/`（构建脚本会自动安装）
+- 推荐使用安装脚本 + systemd，而不是直接在 `deploy/` 目录运行二进制
+- 安装脚本默认安装前缀为 `/usr/local`，可用 `--prefix` 覆盖
+- 安装前会自动修正配置：`web_root` 与 `zlog.log_file` 路径
 - 网络配置操作需要 root 权限，其他硬件操作使用 `piduier` 组权限
 
 ```bash
-# 使用 build.sh 编译后：
-cd deploy
-./piduier
+# 1) 本地编译
+ARCH=arm64 ./build.sh
 
-# 如需网络配置或开发测试，可使用 root：
-cd deploy && sudo ./piduier
+# 2) 发送到目标机
+TARGET=lsc@172.16.1.101 TARGET_DIR=~/Desktop/piduier ./deploy.sh
+
+# 3) 目标机安装（默认前缀 /usr/local）
+ssh lsc@172.16.1.101
+cd ~/Desktop/piduier
+sudo ./install.sh
+
+# 4) systemd 管理
+sudo systemctl start piduier
+sudo systemctl stop piduier
+sudo systemctl status piduier
+sudo systemctl enable piduier
 ```
 
 HTTP 监听地址与端口由 **`piduier.conf`** 中的 **`http_listen`**、**`http_port`** 指定（安装模板默认为 `0.0.0.0` / `8000`）。
