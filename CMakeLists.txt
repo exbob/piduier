@@ -28,7 +28,28 @@ if(NOT PIDUIER_VERSION)
     set(PIDUIER_VERSION "unknown")
 endif()
 add_definitions(-DPIDUIER_VERSION="${PIDUIER_VERSION}")
-add_definitions(-DPIDUIER_BUILD_ARCH="${CMAKE_SYSTEM_PROCESSOR}")
+
+# Determine runtime arch string from compiler target first (works for cross compile).
+set(PIDUIER_BUILD_ARCH_STR "${CMAKE_SYSTEM_PROCESSOR}")
+if(CMAKE_C_COMPILER)
+    execute_process(
+        COMMAND ${CMAKE_C_COMPILER} -dumpmachine
+        OUTPUT_VARIABLE PIDUIER_COMPILER_MACHINE
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+        ERROR_QUIET
+    )
+    if(PIDUIER_COMPILER_MACHINE)
+        string(TOLOWER "${PIDUIER_COMPILER_MACHINE}" PIDUIER_COMPILER_MACHINE_LOWER)
+        if(PIDUIER_COMPILER_MACHINE_LOWER MATCHES "^(aarch64|arm64)")
+            set(PIDUIER_BUILD_ARCH_STR "arm64")
+        elseif(PIDUIER_COMPILER_MACHINE_LOWER MATCHES "^(x86_64|amd64)")
+            set(PIDUIER_BUILD_ARCH_STR "x86_64")
+        elseif(PIDUIER_COMPILER_MACHINE_LOWER MATCHES "^arm")
+            set(PIDUIER_BUILD_ARCH_STR "arm")
+        endif()
+    endif()
+endif()
+add_definitions(-DPIDUIER_BUILD_ARCH="${PIDUIER_BUILD_ARCH_STR}")
 
 # zlog 1.2.18 (vendored)
 set(ZLOG_SOURCES
