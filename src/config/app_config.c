@@ -160,6 +160,7 @@ int piduier_config_load(const char *path, piduier_config_t *cfg,
         return -1;
     }
     memset(cfg, 0, sizeof(*cfg));
+    strcpy(cfg->web_root, "./web");
 
     char *json_text = read_file_all(path, errbuf, errbuf_sz);
     if (json_text == NULL) {
@@ -199,6 +200,20 @@ int piduier_config_load(const char *path, piduier_config_t *cfg,
         goto done;
     }
     cfg->http_port = port;
+
+    cJSON *j_web_root = cJSON_GetObjectItemCaseSensitive(root, "web_root");
+    if (j_web_root != NULL) {
+        if (!cJSON_IsString(j_web_root) || j_web_root->valuestring == NULL ||
+            j_web_root->valuestring[0] == '\0') {
+            set_err(errbuf, errbuf_sz, "web_root must be a non-empty string");
+            goto done;
+        }
+        if (strlen(j_web_root->valuestring) >= sizeof(cfg->web_root)) {
+            set_err(errbuf, errbuf_sz, "web_root is too long");
+            goto done;
+        }
+        strcpy(cfg->web_root, j_web_root->valuestring);
+    }
 
     cJSON *zlog = cJSON_GetObjectItemCaseSensitive(root, "zlog");
     if (!cJSON_IsObject(zlog)) {

@@ -25,6 +25,14 @@
 #define GPIO_HINT "Check pinctrl availability, pin ownership, and permissions."
 static char *last_gpio_ws_json = NULL;
 static uint64_t last_gpio_ws_check_ms = 0;
+static char g_web_root[1024] = "./web";
+
+void router_set_web_root(const char *web_root) {
+    if (web_root == NULL || web_root[0] == '\0') {
+        return;
+    }
+    snprintf(g_web_root, sizeof(g_web_root), "%s", web_root);
+}
 
 static void handle_system_version(struct mg_connection *c, struct mg_http_message *hm) {
     if (mg_match(hm->method, mg_str("GET"), NULL)) {
@@ -842,7 +850,7 @@ void router_handle_request(struct mg_connection *c, struct mg_http_message *hm) 
     }
     // 静态文件服务
     else {
-        struct mg_http_serve_opts opts = {.root_dir = "web", .fs = &mg_fs_posix};
+        struct mg_http_serve_opts opts = {.root_dir = g_web_root, .fs = &mg_fs_posix};
         mg_http_serve_dir(c, hm, &opts);
     }
 }

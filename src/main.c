@@ -120,6 +120,8 @@ int main(int argc, char **argv)
 	LOG_INFO("piduier starting version=%s arch=%s config=%s http_listen=%s http_port=%d log_file=%s",
 	         PIDUIER_VERSION, PIDUIER_BUILD_ARCH, config_path,
 	         g_cfg.http_listen, g_cfg.http_port, g_cfg.log_file);
+    router_set_web_root(g_cfg.web_root);
+    LOG_INFO("web root set to %s", g_cfg.web_root);
 
 #ifdef PIDUIER_DEBUG_LOG
 	mg_log_set(MG_LL_DEBUG);

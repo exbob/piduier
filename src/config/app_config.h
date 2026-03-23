@@ -6,6 +6,7 @@
 typedef struct piduier_config {
     char http_listen[256];
     int http_port;
+    char web_root[1024];
     /** zlog.log_file as read from JSON (may be empty when no @LOG_FILE@ in rules) */
     char log_file[1024];
     /** malloc'd zlog ini text for zlog_init_from_string; free with piduier_config_free */

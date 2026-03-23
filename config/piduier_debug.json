@@ -1,6 +1,7 @@
 {
   "http_listen": "0.0.0.0",
   "http_port": 8000,
+  "web_root": "./web",
   "zlog": {
     "log_file": "",
     "global": {
