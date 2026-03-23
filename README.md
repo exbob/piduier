@@ -1,6 +1,6 @@
 # 树莓派监控软件 (piduier)
 
-基于 Mongoose 的树莓派监控软件，提供通过 Web 界面监控和管理树莓派的功能。
+基于 Mongoose 的树莓派调试软件，定位为 Raspberry Pi 5 40-pin 接口调试平台，用于嵌入式软硬件开发与联调。
 
 ## 系统环境配置
 
@@ -205,7 +205,6 @@ cd deploy
 ## 使用
 
 1. 启动服务器后，在浏览器中访问：`http://<树莓派IP>:<http_port>`（默认端口见 `piduier.conf`）
-2. 通过 Web 界面监控和管理树莓派：
-   - **监控面板**: 查看系统信息、CPU/内存使用率、网络状态等
-   - **网络设置**: 配置以太网和 Wi-Fi
-   - **HAT-40Pin**: 控制 GPIO、PWM、SPI、I2C、UART 等硬件接口
+2. 通过 Web 界面进行系统观测与 40-pin 接口调试：
+   - **Dashboard**: 查看系统信息、CPU/内存使用率、网络状态等
+   - **40-pin Debug**: 对 GPIO、PWM、SPI、I2C、UART 等硬件接口进行调试与联调

@@ -59,6 +59,7 @@ static void *cpu_monitor_thread(void *arg) {
 static void print_usage(FILE *fp) {
     fprintf(fp,
             "piduier %s\n"
+            "PiDuier is a Raspberry Pi 5 40-pin interface debugging platform for embedded software and hardware development.\n"
             "Usage: piduier [options]\n"
             "  -f, --config PATH   application config (JSON), default: ./piduier.conf\n"
             "  -h, --help          show this help\n",
@@ -117,7 +118,7 @@ int main(int argc, char **argv)
 	}
 	atexit(piduier_exit_cleanup);
 
-	LOG_INFO("piduier starting version=%s arch=%s config=%s http_listen=%s http_port=%d log_file=%s",
+	LOG_INFO("piduier starting product=\"Raspberry Pi 5 40-pin interface debugging platform\" version=%s arch=%s config=%s http_listen=%s http_port=%d log_file=%s",
 	         PIDUIER_VERSION, PIDUIER_BUILD_ARCH, config_path,
 	         g_cfg.http_listen, g_cfg.http_port, g_cfg.log_file);
     router_set_web_root(g_cfg.web_root);

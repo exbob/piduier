@@ -1,5 +1,5 @@
 [Unit]
-Description=piduier monitor service
+Description=piduier 40-pin interface debugging service
 After=network.target
 Wants=network.target
 

@@ -24,6 +24,7 @@ if [ ! -d "${ARTIFACT_DIR}/web" ]; then
     exit 1
 fi
 
+echo "PiDuier: Raspberry Pi 5 40-pin interface debugging platform"
 echo "Deploy target: ${TARGET}:${TARGET_DIR}"
 echo "Artifacts: ${ARTIFACT_DIR}/piduier, ${ARTIFACT_DIR}/web, ${ARTIFACT_DIR}/piduier.conf, ${ARTIFACT_DIR}/install.sh, ${ARTIFACT_DIR}/uninstall.sh, ${ARTIFACT_DIR}/piduier.service"
 echo ""

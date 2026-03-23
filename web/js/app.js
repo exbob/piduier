@@ -2,6 +2,7 @@
 
 // API 基础 URL
 const API_BASE = '';
+const PRODUCT_TAGLINE = 'Raspberry Pi 5 40-pin interface debugging platform';
 
 // 当前活动页面
 let currentPage = 'dashboard';
@@ -13,6 +14,7 @@ let gpioStatusCache = {};
 
 // 初始化应用
 document.addEventListener('DOMContentLoaded', () => {
+    document.title = `PiDuier - ${PRODUCT_TAGLINE}`;
     initMenu();
     initMobileSidebar();
     initDashboard();

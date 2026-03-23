@@ -4,6 +4,8 @@ set -eu
 
 usage() {
     cat <<'EOF'
+PiDuier: Raspberry Pi 5 40-pin interface debugging platform
+
 Usage:
   sudo ./install.sh [--prefix PATH]
 
@@ -65,6 +67,7 @@ LOG_DIR="/var/log/piduier"
 CONF_DST="${ETC_DIR}/piduier.conf"
 SERVICE_DST="/etc/systemd/system/piduier.service"
 
+echo "PiDuier: Raspberry Pi 5 40-pin interface debugging platform"
 echo "Install prefix: ${PREFIX}"
 echo "Create directories..."
 mkdir -p "${BIN_DIR}" "${ETC_DIR}" "${SHARE_DIR}" "${LOG_DIR}"

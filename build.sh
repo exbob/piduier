@@ -7,6 +7,8 @@
 #   ./build.sh clean
 # Select architecture with ARCH env var: ARCH=x86 or ARCH=arm64 (default x86)
 
+echo "PiDuier: Raspberry Pi 5 40-pin interface debugging platform"
+
 BUILD_DIR="./build"
 INSTALL_PREFIX="./deploy"
 
