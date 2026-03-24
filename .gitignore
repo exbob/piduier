@@ -25,3 +25,6 @@ server
 *.swo
 *~
 
+# 本地 Git worktrees
+.worktrees/
+
