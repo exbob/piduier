@@ -1,0 +1,106 @@
+name: Release ARM64 On Tag
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-arm64-${{ github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  release-arm64:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install build dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake pkg-config gcc-aarch64-linux-gnu
+
+      - name: Build ARM64 artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+          ARCH=arm64 ./build.sh
+
+      - name: Validate deploy outputs
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          required_files=(
+            "deploy/piduier"
+            "deploy/piduier.conf"
+            "deploy/install.sh"
+            "deploy/uninstall.sh"
+            "deploy/piduier.service"
+          )
+
+          for path in "${required_files[@]}"; do
+            if [[ ! -f "${path}" ]]; then
+              echo "Missing required file: ${path}" >&2
+              exit 1
+            fi
+          done
+
+          if [[ ! -d "deploy/web" ]]; then
+            echo "Missing required directory: deploy/web/" >&2
+            exit 1
+          fi
+
+      - name: Package deploy directory
+        id: package
+        shell: bash
+        run: |
+          set -euo pipefail
+          tag="${GITHUB_REF_NAME}"
+          asset_name="piduier-${tag}-arm64.tar.gz"
+          tar -czf "${asset_name}" deploy
+          echo "asset_name=${asset_name}" >> "${GITHUB_OUTPUT}"
+
+      - name: Ensure release does not already exist
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          api_path="repos/${GITHUB_REPOSITORY}/releases/tags/${GITHUB_REF_NAME}"
+
+          set +e
+          response="$(gh api -i "${api_path}" 2>&1)"
+          gh_status=$?
+          set -e
+
+          if [[ ${gh_status} -eq 0 ]]; then
+            echo "Release for tag ${GITHUB_REF_NAME} already exists." >&2
+            exit 1
+          fi
+
+          http_status="$(printf '%s\n' "${response}" | awk 'toupper($1) ~ /^HTTP/ {print $2; exit}')"
+          if [[ "${http_status}" == "404" ]]; then
+            exit 0
+          fi
+
+          echo "Failed to check release existence via gh api." >&2
+          echo "HTTP status: ${http_status:-unknown}" >&2
+          echo "${response}" >&2
+          exit 1
+
+      - name: Publish GitHub release
+        uses: softprops/action-gh-release@153bb8e04406b158c6c84fc1615b65b24149a1fe
+        with:
+          tag_name: ${{ github.ref_name }}
+          files: ${{ steps.package.outputs.asset_name }}

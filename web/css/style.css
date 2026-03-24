@@ -667,7 +667,13 @@ body {
     background: rgba(var(--color-bg-rgb), 0.65);
     color: var(--color-text-secondary);
     font-size: 12px;
+}
+
+.gpio-header-actions {
     margin-left: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
 }
 
 .gpio-conn-dot {
@@ -856,7 +862,7 @@ body {
         align-items: flex-start;
     }
 
-    .gpio-conn-status {
+    .gpio-header-actions {
         margin-left: 0;
     }
     
