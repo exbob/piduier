@@ -1,5 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Manrope:wght@400;500;600;700&display=swap');
-
 /* 现代工业仪表风深色主题 - 使用 OKLCH 色彩空间 */
 
 /* CSS 变量定义（OKLCH 色彩空间，带 RGB 回退） */
@@ -1203,5 +1201,267 @@ body {
     
     .gpio-pin {
         min-width: auto;
+    }
+}
+
+/* -------------------------------------------------------------------------- */
+/* Nothing-style overrides (dark mode)                                        */
+/* -------------------------------------------------------------------------- */
+.nothing-theme {
+    --color-primary: #d71921;
+    --color-primary-rgb: 215, 25, 33;
+    --color-success: #7ddf93;
+    --color-success-rgb: 125, 223, 147;
+    --color-warning: #f0d15c;
+    --color-warning-rgb: 240, 209, 92;
+    --color-error: #d71921;
+    --color-error-rgb: 215, 25, 33;
+    --color-bg: #050505;
+    --color-bg-rgb: 5, 5, 5;
+    --color-card: #0b0b0b;
+    --color-card-rgb: 11, 11, 11;
+    --color-surface: #101010;
+    --color-surface-rgb: 16, 16, 16;
+    --color-text-primary: rgba(255, 255, 255, 0.9);
+    --color-text-primary-rgb: 255, 255, 255;
+    --color-text-secondary: rgba(255, 255, 255, 0.58);
+    --color-text-secondary-rgb: 255, 255, 255;
+    --color-border: #232323;
+    --color-border-rgb: 35, 35, 35;
+    --shadow-soft: none;
+    --shadow-strong: none;
+}
+
+.nothing-theme body,
+body.nothing-theme {
+    font-family: "Space Grotesk", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: #050505;
+    color: var(--color-text-primary);
+    letter-spacing: 0.01em;
+}
+
+body.nothing-theme .main-container {
+    background-image:
+        linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+    background-size: 24px 24px;
+}
+
+body.nothing-theme .sidebar {
+    background: #080808;
+    border-right: 1px solid #222;
+    box-shadow: none;
+}
+
+body.nothing-theme .sidebar-logo {
+    border-bottom: 1px solid #202020;
+}
+
+body.nothing-theme .logo-text,
+body.nothing-theme .page-title,
+body.nothing-theme .card-title {
+    font-family: "Space Grotesk", sans-serif;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+}
+
+body.nothing-theme .logo-subtitle,
+body.nothing-theme .section-note,
+body.nothing-theme .info-label,
+body.nothing-theme .form-label,
+body.nothing-theme .gpio-conn-status,
+body.nothing-theme .message {
+    font-family: "Space Mono", monospace;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 11px;
+}
+
+body.nothing-theme .menu-link {
+    border: 1px solid transparent;
+    border-radius: 6px;
+    color: var(--color-text-secondary);
+    transition: none;
+}
+
+body.nothing-theme .menu-link:hover {
+    background: #111;
+    color: var(--color-text-primary);
+    transform: none;
+    border-color: #2a2a2a;
+}
+
+body.nothing-theme .menu-link.active {
+    background: #121212;
+    border-color: #3a3a3a;
+    color: #fff;
+    box-shadow: none;
+    position: relative;
+}
+
+body.nothing-theme .menu-link.active::before {
+    content: "";
+    position: absolute;
+    left: 8px;
+    top: 50%;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    transform: translateY(-50%);
+    background: #d71921;
+}
+
+body.nothing-theme .content {
+    padding: 28px;
+}
+
+body.nothing-theme .page-header {
+    margin-bottom: 40px;
+    border-bottom: 1px solid #1d1d1d;
+    padding-bottom: 18px;
+}
+
+body.nothing-theme .page-title {
+    font-size: 36px;
+    line-height: 1;
+}
+
+body.nothing-theme .card {
+    background: #0b0b0b;
+    border: 1px solid #232323;
+    border-radius: 10px;
+    box-shadow: none;
+    backdrop-filter: none;
+}
+
+body.nothing-theme .card-title {
+    font-size: 15px;
+    color: #f4f4f4;
+    margin-bottom: 16px;
+}
+
+body.nothing-theme .info-item .info-label,
+body.nothing-theme .info-label {
+    color: var(--color-text-secondary);
+}
+
+body.nothing-theme .info-item .info-value,
+body.nothing-theme .info-value {
+    color: var(--color-text-primary);
+}
+
+body.nothing-theme .metric-value {
+    font-family: "Space Mono", monospace;
+    font-size: 42px;
+    font-weight: 700;
+}
+
+body.nothing-theme .metric-unit {
+    font-family: "Space Mono", monospace;
+    color: var(--color-text-secondary);
+}
+
+body.nothing-theme .metric-circle-bg {
+    stroke: #191919;
+}
+
+body.nothing-theme .metric-circle-fill {
+    filter: none;
+}
+
+body.nothing-theme .status-badge {
+    border-radius: 999px;
+    border: 1px solid #333;
+    background: #101010;
+    font-family: "Space Mono", monospace;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 11px;
+}
+
+body.nothing-theme .status-badge.connected {
+    border-color: rgba(var(--color-success-rgb), 0.8);
+    color: var(--color-success);
+    background: rgba(var(--color-success-rgb), 0.08);
+}
+
+body.nothing-theme .status-badge.disconnected {
+    border-color: rgba(var(--color-error-rgb), 0.8);
+    color: #ffb0b3;
+    background: rgba(var(--color-error-rgb), 0.08);
+}
+
+body.nothing-theme .btn,
+body.nothing-theme .btn-icon,
+body.nothing-theme .pin-config-btn,
+body.nothing-theme .input-field {
+    border-radius: 6px;
+    box-shadow: none;
+    transition: none;
+}
+
+body.nothing-theme .btn-primary,
+body.nothing-theme .btn-danger {
+    background: #141414;
+    border: 1px solid #3a3a3a;
+    color: #fff;
+}
+
+body.nothing-theme .btn-primary:hover,
+body.nothing-theme .btn-danger:hover,
+body.nothing-theme .btn-icon:hover,
+body.nothing-theme .pin-config-btn:hover {
+    background: #1a1a1a;
+    border-color: #535353;
+    transform: none;
+}
+
+body.nothing-theme .btn-danger {
+    border-color: rgba(var(--color-error-rgb), 0.8);
+    color: #ffbfc2;
+}
+
+body.nothing-theme .btn-icon {
+    background: #0f0f0f;
+    border-color: #2c2c2c;
+}
+
+body.nothing-theme .btn:focus-visible,
+body.nothing-theme .btn-icon:focus-visible,
+body.nothing-theme .input-field:focus-visible,
+body.nothing-theme .menu-link:focus-visible,
+body.nothing-theme .pin-config-btn:focus-visible {
+    outline: 1px solid #d71921;
+    outline-offset: 2px;
+}
+
+body.nothing-theme .info-row {
+    border-bottom: 1px dashed #232323;
+}
+
+body.nothing-theme .gpio-legend,
+body.nothing-theme .gpio-pinout-table thead,
+body.nothing-theme .modal-backdrop,
+body.nothing-theme .gpio-config-menu {
+    background: #0d0d0d;
+}
+
+body.nothing-theme .gpio-pinout-table tbody tr:hover {
+    background: rgba(255, 255, 255, 0.03);
+}
+
+body.nothing-theme .pin-circle {
+    border-color: rgba(255, 255, 255, 0.16);
+}
+
+body.nothing-theme .message.success,
+body.nothing-theme .message.error {
+    border-radius: 6px;
+    border-width: 1px;
+}
+
+@media (max-width: 768px) {
+    body.nothing-theme .content {
+        padding: 72px 14px 14px;
     }
 }
