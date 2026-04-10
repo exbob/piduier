@@ -1,13 +1,14 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.15)
 project(piduier C)
 
-# 设置 C 标准
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
+set(CMAKE_C_EXTENSIONS OFF)
 
-if(NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE Release CACHE STRING "Build type" FORCE)
+if(NOT CMAKE_CONFIGURATION_TYPES AND NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Build type" FORCE)
 endif()
+set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS Debug Release)
 
 # 编译选项
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra")
@@ -16,18 +17,18 @@ set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -g -O0")
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D_GNU_SOURCE -D_POSIX_C_SOURCE=200809L")
 
-# Inject git describe version for runtime API/about page
+string(TIMESTAMP BUILD_TIME "%Y.%m.%d %H:%M" UTC)
+
 execute_process(
-    COMMAND git describe --tags --always --long
-    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-    OUTPUT_VARIABLE PIDUIER_VERSION
+    COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/git-version.sh"
+    OUTPUT_VARIABLE GIT_VERSION
     OUTPUT_STRIP_TRAILING_WHITESPACE
     ERROR_QUIET
 )
-if(NOT PIDUIER_VERSION)
-    set(PIDUIER_VERSION "unknown")
+if(NOT GIT_VERSION)
+    set(GIT_VERSION "unknown")
 endif()
-add_definitions(-DPIDUIER_VERSION="${PIDUIER_VERSION}")
+configure_file(Config.h.in Config.h)
 
 # Determine runtime arch string from compiler target first (works for cross compile).
 set(PIDUIER_BUILD_ARCH_STR "${CMAKE_SYSTEM_PROCESSOR}")
@@ -51,38 +52,7 @@ if(CMAKE_C_COMPILER)
 endif()
 add_definitions(-DPIDUIER_BUILD_ARCH="${PIDUIER_BUILD_ARCH_STR}")
 
-# zlog 1.2.18 (vendored)
-set(ZLOG_SOURCES
-    src/third_party/zlog/src/buf.c
-    src/third_party/zlog/src/category.c
-    src/third_party/zlog/src/category_table.c
-    src/third_party/zlog/src/conf.c
-    src/third_party/zlog/src/event.c
-    src/third_party/zlog/src/format.c
-    src/third_party/zlog/src/level.c
-    src/third_party/zlog/src/level_list.c
-    src/third_party/zlog/src/lockfile.c
-    src/third_party/zlog/src/mdc.c
-    src/third_party/zlog/src/record.c
-    src/third_party/zlog/src/record_table.c
-    src/third_party/zlog/src/rotater.c
-    src/third_party/zlog/src/rule.c
-    src/third_party/zlog/src/spec.c
-    src/third_party/zlog/src/thread.c
-    src/third_party/zlog/src/zc_arraylist.c
-    src/third_party/zlog/src/zc_hashtable.c
-    src/third_party/zlog/src/zc_profile.c
-    src/third_party/zlog/src/zc_util.c
-    src/third_party/zlog/src/zlog.c
-)
-add_library(zlog STATIC ${ZLOG_SOURCES})
-target_include_directories(zlog PUBLIC ${CMAKE_SOURCE_DIR}/src/third_party/zlog/src)
-target_link_libraries(zlog PUBLIC pthread)
-target_compile_options(zlog PRIVATE -Wno-sign-compare -Wno-unused-parameter)
-
-# cJSON 1.7.19 (vendored)
-add_library(cjson STATIC src/third_party/cjson/cJSON.c)
-target_include_directories(cjson PUBLIC ${CMAKE_SOURCE_DIR}/src/third_party/cjson)
+include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/thirdparty.cmake")
 
 # 添加源文件
 set(SOURCES
@@ -116,6 +86,7 @@ endif()
 
 # 包含目录
 target_include_directories(piduier PRIVATE
+    ${PROJECT_BINARY_DIR}
     src
     src/config
     src/util

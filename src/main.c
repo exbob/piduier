@@ -1,4 +1,5 @@
 #include "config/app_config.h"
+#include "Config.h"
 #include "mongoose.h"
 #include "hardware/gpio.h"
 #include "http/router.h"
@@ -63,6 +64,7 @@ static void print_usage(FILE *fp) {
             "PiDuier is a Raspberry Pi 5 40-pin interface debugging platform for embedded software and hardware development.\n"
             "Usage: piduier [options]\n"
             "  -f, --config PATH   application config (JSON), default: ./piduier.conf\n"
+            "  -v, --version       show version\n"
             "  -h, --help          show this help\n",
             PIDUIER_VERSION);
 }
@@ -74,6 +76,10 @@ static int parse_args(int argc, char **argv, const char **config_path_out) {
         if (strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "--help") == 0) {
             print_usage(stdout);
             return 2;
+        }
+        if (strcmp(argv[i], "-v") == 0 || strcmp(argv[i], "--version") == 0) {
+            printf("piduier %s\n", PIDUIER_VERSION);
+            return 3;
         }
         if (strcmp(argv[i], "-f") == 0 || strcmp(argv[i], "--config") == 0) {
             if (i + 1 >= argc) {
@@ -104,6 +110,9 @@ int main(int argc, char **argv)
         return EXIT_FAILURE;
     }
     if (prc == 2) {
+        return EXIT_SUCCESS;
+    }
+    if (prc == 3) {
         return EXIT_SUCCESS;
     }
 

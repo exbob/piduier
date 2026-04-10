@@ -1,0 +1,7 @@
+#ifndef PIDUIER_CONFIG_H
+#define PIDUIER_CONFIG_H
+
+#define PIDUIER_VERSION "@GIT_VERSION@"
+#define PIDUIER_BUILD_TIME "@BUILD_TIME@"
+
+#endif

@@ -1,4 +1,5 @@
 #include "router.h"
+#include "Config.h"
 #include "../system/system_info.h"
 #include "../system/datetime.h"
 #include "../system/cpu.h"
