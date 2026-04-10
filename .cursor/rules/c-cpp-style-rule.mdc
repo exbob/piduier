@@ -1,0 +1,68 @@
+---
+description: Enforce C/C++ coding standards, switching between Linux Kernel and Google style guides based on project type.
+globs: **/*.{c,cpp,cc,cxx,h,hpp,hxx}
+alwaysApply: true
+---
+
+# C/C++ Coding Standards
+
+## Style Selection
+
+- Linux kernel development: strictly follow Linux Kernel Coding Style (`Documentation/process/coding-style.rst`) and run `scripts/checkpatch.pl` for verification.
+- Other software development: use Google C++ Style Guide as baseline, with the mandatory modifications below.
+
+## Mandatory Modified Rules (Non-kernel C/C++)
+
+### 1) Indentation
+
+- Must use exactly one tab character per indentation level.
+- Must not use spaces for indentation.
+- Spaces are allowed only for alignment.
+
+```c
+void function()
+{
+	int x = 1;		/* tab indent */
+	int longer_name = 2;	/* tab indent + spaces alignment */
+}
+```
+
+### 2) Braces
+
+- Function opening brace must be on its own line.
+
+```c
+void function()
+{
+	if (condition) {
+		/* code */
+	}
+}
+```
+
+### 3) Pointer Style
+
+- `*` must bind to variable name, not type token.
+- Examples: `int *ptr`, `char *name`, `void *data`.
+- Function parameters must follow same style.
+
+```c
+int *ptr;
+char *name;
+void *data;
+int process(const char *input, size_t *length);
+```
+
+### 4) Header Guards
+
+- Must follow Linux-kernel-like macro naming.
+- Guard macro format: `_FILENAME_H` or `_PATH_FILENAME_H`.
+
+```c
+#ifndef _MODULE_NAME_H
+#define _MODULE_NAME_H
+
+/* header content */
+
+#endif /* _MODULE_NAME_H */
+```
