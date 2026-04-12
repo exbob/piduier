@@ -4,7 +4,7 @@ globs: **/*.{c,cpp,cc,cxx,h,hpp,hxx}
 alwaysApply: true
 ---
 
-# C/C++ Coding Standards
+# C/C++ Coding Style
 
 ## Style Selection
 
