@@ -7,23 +7,26 @@
 #define PIDUIER_PINCTRL_FUNC_MAX_LEN 4
 
 typedef struct piduier_config {
-    char http_listen[256];
-    int http_port;
-    char web_root[1024];
-    /** zlog.log_file as read from JSON (may be empty when no @LOG_FILE@ in rules) */
-    char log_file[1024];
-    /** malloc'd zlog ini text for zlog_init_from_string; free with piduier_config_free */
-    char *zlog_ini;
-    /** pinctrl target function by GPIO index: ip/op/a0~a8/no */
-    char pinctrl[PIDUIER_PINCTRL_GPIO_COUNT][PIDUIER_PINCTRL_FUNC_MAX_LEN];
+	char http_listen[256];
+	int http_port;
+	char web_root[1024];
+	/** zlog.log_file as read from JSON (may be empty when no @LOG_FILE@ in
+	 * rules) */
+	char log_file[1024];
+	/** malloc'd zlog ini text for zlog_init_from_string; free with
+	 * piduier_config_free */
+	char *zlog_ini;
+	/** pinctrl target function by GPIO index: ip/op/a0~a8/no */
+	char pinctrl[PIDUIER_PINCTRL_GPIO_COUNT][PIDUIER_PINCTRL_FUNC_MAX_LEN];
 } piduier_config_t;
 
 /**
- * Load and validate piduier.conf (JSON). On failure returns -1 and writes a message to errbuf.
- * On success returns 0; caller must call piduier_config_free when done.
+ * Load and validate piduier.conf (JSON). On failure returns -1 and writes a
+ * message to errbuf. On success returns 0; caller must call piduier_config_free
+ * when done.
  */
-int piduier_config_load(const char *path, piduier_config_t *cfg,
-                        char *errbuf, size_t errbuf_sz);
+int piduier_config_load(const char *path, piduier_config_t *cfg, char *errbuf,
+                        size_t errbuf_sz);
 
 void piduier_config_free(piduier_config_t *cfg);
 

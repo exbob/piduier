@@ -1,26 +1,43 @@
+# SPDX-License-Identifier: GPL-2.0
+#
+# clang-format configuration file. Intended for clang-format >= 11.
+#
+# For more information, see:
+#
+#   Documentation/dev-tools/clang-format.rst
+#   https://clang.llvm.org/docs/ClangFormat.html
+#   https://clang.llvm.org/docs/ClangFormatStyleOptions.html
+#
 ---
-# 基于 LLVM 代码风格
-BasedOnStyle: LLVM
+Language: Cpp
+BasedOnStyle: Google
 
-# 使用制表符缩进（空格仅用于对齐）
+# Indentation: Use Tab, do not use space indentation
+IndentWidth: 4
+TabWidth: 4
 UseTab: ForIndentation
-TabWidth: 8
-IndentWidth: 8
 
-# 列限制（100 列）
-ColumnLimit: 100
+# Braces: Function left brace on its own line
+BreakBeforeBraces: Custom
+BraceWrapping:
+  AfterFunction: true
+  AfterControlStatement: false
+  AfterClass: false
+  AfterStruct: false
+  AfterUnion: false
+  AfterEnum: false
+  BeforeCatch: false
+  BeforeElse: false
 
-# Linux 内核大括号风格：函数定义大括号换行，其他不换行
-BreakBeforeBraces: Linux
+# Pointer style: * close to variable name
+PointerAlignment: Right
 
-# 函数一律换行（禁止短函数单行）
+# Keep Google style
+ColumnLimit: 80
 AllowShortFunctionsOnASingleLine: None
-
-# if 语句无论长短都换行
-AllowShortIfStatementsOnASingleLine: false
-
-# case 标签与 switch 对齐（不缩进）
-IndentCaseLabels: false
-
-# 其余保持 LLVM 默认
-
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLoopsOnASingleLine: false
+IndentCaseLabels: true
+SpaceBeforeParens: ControlStatements
+SpacesBeforeTrailingComments: 2
+MaxEmptyLinesToKeep: 1

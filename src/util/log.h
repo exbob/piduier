@@ -3,7 +3,8 @@
 
 #include "zlog.h"
 
-/** Initialize zlog from a full zlog-format config string (e.g. from piduier.conf). */
+/** Initialize zlog from a full zlog-format config string (e.g. from
+ * piduier.conf). */
 int log_init(const char *zlog_config_string);
 void log_fini(void);
 

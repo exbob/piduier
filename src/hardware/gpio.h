@@ -5,54 +5,53 @@
 
 // 支持的 GPIO 引脚列表
 #define GPIO_SUPPORTED_PINS_COUNT 28
-#define GPIO_SUPPORTED_PINS { \
-    0, 1, 2, 3, 4, 5, 6, 7, \
-    8, 9, 10, 11, 12, 13, 14, 15, \
-    16, 17, 18, 19, 20, 21, 22, 23, \
-    24, 25, 26, 27 \
-}
+#define GPIO_SUPPORTED_PINS                                                   \
+	{                                                                         \
+		0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, \
+		    20, 21, 22, 23, 24, 25, 26, 27                                    \
+	}
 #define GPIO_PINCTRL_FUNC_MAX_LEN 4
 
 // GPIO 模式
 typedef enum {
-    GPIO_MODE_INPUT = 0,
-    GPIO_MODE_OUTPUT = 1,
-    GPIO_MODE_UNKNOWN = -1
+	GPIO_MODE_INPUT = 0,
+	GPIO_MODE_OUTPUT = 1,
+	GPIO_MODE_UNKNOWN = -1
 } gpio_mode_t;
 
 // GPIO 值
 typedef enum {
-    GPIO_VALUE_LOW = 0,
-    GPIO_VALUE_HIGH = 1,
-    GPIO_VALUE_UNKNOWN = -1
+	GPIO_VALUE_LOW = 0,
+	GPIO_VALUE_HIGH = 1,
+	GPIO_VALUE_UNKNOWN = -1
 } gpio_value_t;
 
 // GPIO 引脚信息
 typedef struct {
-    int gpio_num;           // GPIO 编号
-    gpio_mode_t mode;       // 模式（输入/输出）
-    gpio_value_t value;     // 当前值
-    int available;          // 是否可用（1=可用，0=不可用）
+	int gpio_num;        // GPIO 编号
+	gpio_mode_t mode;    // 模式（输入/输出）
+	gpio_value_t value;  // 当前值
+	int available;       // 是否可用（1=可用，0=不可用）
 } gpio_pin_info_t;
 
 // GPIO 状态列表
 typedef struct {
-    gpio_pin_info_t *pins;
-    size_t count;
+	gpio_pin_info_t *pins;
+	size_t count;
 } gpio_status_t;
 
 typedef enum {
-    GPIO_PULL_OFF = 0,
-    GPIO_PULL_UP = 1,
-    GPIO_PULL_DOWN = 2,
-    GPIO_PULL_UNKNOWN = -1
+	GPIO_PULL_OFF = 0,
+	GPIO_PULL_UP = 1,
+	GPIO_PULL_DOWN = 2,
+	GPIO_PULL_UNKNOWN = -1
 } gpio_pull_t;
 
 typedef struct {
-    int gpio_num;
-    gpio_pull_t pull;
-    int drive;         // -1 unknown, 0=dl, 1=dh
-    int available;     // 1 = available
+	int gpio_num;
+	gpio_pull_t pull;
+	int drive;      // -1 unknown, 0=dl, 1=dh
+	int available;  // 1 = available
 } gpio_pin_attrs_t;
 
 // 检查 GPIO 引脚是否支持
@@ -106,7 +105,8 @@ int gpio_set_drive(int gpio_num, const char *drive);
 // 启动时按配置校验并修正 GPIO0~GPIO27 的 pinctrl 功能
 // pinctrl_funcs[i] 对应 gpio i，值为 ip/op/a0~a8/no
 // 返回 0 成功，-1 失败
-int gpio_apply_pinctrl_config(const char pinctrl_funcs[][GPIO_PINCTRL_FUNC_MAX_LEN], size_t pin_count);
+int gpio_apply_pinctrl_config(
+    const char pinctrl_funcs[][GPIO_PINCTRL_FUNC_MAX_LEN], size_t pin_count);
 
 // 将 GPIO 状态转换为 JSON 字符串
 // 返回分配的字符串，调用者需要 free()
@@ -116,4 +116,4 @@ char *gpio_status_to_json(const gpio_status_t *status);
 // 返回分配的字符串，调用者需要 free()
 char *gpio_pin_info_to_json(const gpio_pin_info_t *info);
 
-#endif // GPIO_H
+#endif  // GPIO_H

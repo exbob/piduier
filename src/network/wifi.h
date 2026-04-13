@@ -5,20 +5,20 @@
 
 // Wi-Fi 网络信息结构
 typedef struct {
-    char ssid[64];
-    char bssid[32];
-    int signal;
-    char security[32];
-    int channel;
-    char mode[16];
-    int in_use;
+	char ssid[64];
+	char bssid[32];
+	int signal;
+	char security[32];
+	int channel;
+	char mode[16];
+	int in_use;
 } wifi_network_t;
 
 // Wi-Fi 网络列表结构
 typedef struct {
-    wifi_network_t *networks;
-    size_t count;
-    size_t capacity;
+	wifi_network_t *networks;
+	size_t count;
+	size_t capacity;
 } wifi_network_list_t;
 
 // 初始化 Wi-Fi 网络列表
@@ -46,4 +46,4 @@ int wifi_disconnect(const char *device);
 // 返回分配的字符串，调用者需要 free()
 char *wifi_network_list_to_json(const wifi_network_list_t *list);
 
-#endif // WIFI_H
+#endif  // WIFI_H

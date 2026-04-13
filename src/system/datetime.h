@@ -5,12 +5,12 @@
 
 // 日期时间信息结构
 typedef struct {
-    char local_time[64];        // 本地时间 "YYYY-MM-DD HH:MM:SS"
-    char utc_time[64];          // UTC 时间 "YYYY-MM-DD HH:MM:SS"
-    char timezone[64];          // 时区 "Asia/Shanghai"
-    char timezone_offset[16];   // 时区偏移 "+0800"
-    int ntp_synchronized;       // NTP 同步状态 (0/1)
-    int ntp_service_active;     // NTP 服务状态 (0/1)
+	char local_time[64];       // 本地时间 "YYYY-MM-DD HH:MM:SS"
+	char utc_time[64];         // UTC 时间 "YYYY-MM-DD HH:MM:SS"
+	char timezone[64];         // 时区 "Asia/Shanghai"
+	char timezone_offset[16];  // 时区偏移 "+0800"
+	int ntp_synchronized;      // NTP 同步状态 (0/1)
+	int ntp_service_active;    // NTP 服务状态 (0/1)
 } datetime_info_t;
 
 // 获取日期时间信息（使用 timedatectl）
@@ -38,4 +38,4 @@ void datetime_free_timezones(char **timezones);
 // 返回分配的字符串，调用者需要 free()
 char *datetime_info_to_json(const datetime_info_t *info);
 
-#endif // DATETIME_H
+#endif  // DATETIME_H

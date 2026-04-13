@@ -1,17 +1,34 @@
 ---
-description: Enforce C/C++ coding standards, switching between Linux Kernel and Google style guides based on project type.
+description: Enforce C/C++ software coding style.
 globs: **/*.{c,cpp,cc,cxx,h,hpp,hxx}
 alwaysApply: true
 ---
 
-# C/C++ Coding Style
+# C/C++ Software Coding Style
 
-## Style Selection
+## Core Principles
 
-- Linux kernel development: strictly follow Linux Kernel Coding Style (`Documentation/process/coding-style.rst`) and run `scripts/checkpatch.pl` for verification.
-- Other software development: use Google C++ Style Guide as baseline, with the mandatory modifications below.
+### KISS (Keep It Simple)
 
-## Mandatory Modified Rules (Non-kernel C/C++)
+- Prefer the simplest solution that actually works
+- Avoid premature optimization
+- Optimize for clarity over cleverness
+
+### DRY (Don't Repeat Yourself)
+
+- Extract repeated logic into shared functions or utilities
+- Avoid copy-paste implementation drift
+- Introduce abstractions when repetition is real, not speculative
+
+### YAGNI (You Aren't Gonna Need It)
+
+- Do not build features or abstractions before they are needed
+- Avoid speculative generality
+- Start simple, then refactor when the pressure is real
+
+## Coding Style
+
+For C/C++ software development: use Google C++ Style Guide as baseline, with the mandatory modifications below.
 
 ### 1) Indentation
 
@@ -19,26 +36,9 @@ alwaysApply: true
 - Must not use spaces for indentation.
 - Spaces are allowed only for alignment.
 
-```c
-void function()
-{
-	int x = 1;		/* tab indent */
-	int longer_name = 2;	/* tab indent + spaces alignment */
-}
-```
-
 ### 2) Braces
 
 - Function opening brace must be on its own line.
-
-```c
-void function()
-{
-	if (condition) {
-		/* code */
-	}
-}
-```
 
 ### 3) Pointer Style
 
@@ -46,23 +46,12 @@ void function()
 - Examples: `int *ptr`, `char *name`, `void *data`.
 - Function parameters must follow same style.
 
-```c
-int *ptr;
-char *name;
-void *data;
-int process(const char *input, size_t *length);
-```
-
 ### 4) Header Guards
 
 - Must follow Linux-kernel-like macro naming.
 - Guard macro format: `_FILENAME_H` or `_PATH_FILENAME_H`.
 
-```c
-#ifndef _MODULE_NAME_H
-#define _MODULE_NAME_H
+## Formatting
 
-/* header content */
-
-#endif /* _MODULE_NAME_H */
-```
+- Use **clang-format** — no style debates
+- Run `clang-format -i <file>` after modification or before committing

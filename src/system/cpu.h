@@ -3,14 +3,14 @@
 
 // CPU 时间结构
 typedef struct {
-    unsigned long user;
-    unsigned long nice;
-    unsigned long system;
-    unsigned long idle;
-    unsigned long iowait;
-    unsigned long irq;
-    unsigned long softirq;
-    unsigned long steal;
+	unsigned long user;
+	unsigned long nice;
+	unsigned long system;
+	unsigned long idle;
+	unsigned long iowait;
+	unsigned long irq;
+	unsigned long softirq;
+	unsigned long steal;
 } cpu_time_t;
 
 // 读取 CPU 时间（从 /proc/stat）
@@ -30,4 +30,4 @@ double cpu_get_usage(void);
 // 后台更新 CPU 占用率缓存（应该在后台线程中调用）
 void cpu_update_cache(void);
 
-#endif // CPU_H
+#endif  // CPU_H

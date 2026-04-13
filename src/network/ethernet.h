@@ -3,14 +3,14 @@
 
 // 以太网配置信息结构
 typedef struct {
-    char connection_name[128];
-    char device[16];
-    char method[16];          // "auto" (DHCP) 或 "manual" (静态IP)
-    char ip[64];
-    char netmask[64];
-    char gateway[64];
-    char dns1[64];
-    char dns2[64];
+	char connection_name[128];
+	char device[16];
+	char method[16];  // "auto" (DHCP) 或 "manual" (静态IP)
+	char ip[64];
+	char netmask[64];
+	char gateway[64];
+	char dns1[64];
+	char dns2[64];
 } ethernet_config_t;
 
 // 获取以太网配置
@@ -36,10 +36,11 @@ int ethernet_set_dhcp(const char *device, const char *connection_name);
 // 返回 0 成功，-1 失败
 int ethernet_set_static(const char *device, const char *connection_name,
                         const char *ip, const char *netmask,
-                        const char *gateway, const char *dns1, const char *dns2);
+                        const char *gateway, const char *dns1,
+                        const char *dns2);
 
 // 将配置转换为 JSON 字符串
 // 返回分配的字符串，调用者需要 free()
 char *ethernet_config_to_json(const ethernet_config_t *config);
 
-#endif // ETHERNET_H
+#endif  // ETHERNET_H

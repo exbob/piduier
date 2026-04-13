@@ -14,4 +14,4 @@ long uptime_get_seconds(void);
 // 返回格式化的字符串，如 "1 day, 2:30:00"
 void uptime_format(long seconds, char *buffer, size_t size);
 
-#endif // UPTIME_H
+#endif  // UPTIME_H
