@@ -1,0 +1,89 @@
+---
+description: Enforce C software coding style.
+globs: **/*.{c,h}
+alwaysApply: true
+---
+
+# C Software Coding Style
+
+## Core Principles
+
+### KISS (Keep It Simple)
+
+- Prefer the simplest solution that actually works
+- Avoid premature optimization
+- Optimize for clarity over cleverness
+
+### DRY (Don't Repeat Yourself)
+
+- Extract repeated logic into shared functions or utilities
+- Avoid copy-paste implementation drift
+- Introduce abstractions when repetition is real, not speculative
+
+### YAGNI (You Aren't Gonna Need It)
+
+- Do not build features or abstractions before they are needed
+- Avoid speculative generality
+- Start simple, then refactor when the pressure is real
+
+## File Organization
+
+MANY SMALL FILES > FEW LARGE FILES:
+
+- High cohesion, low coupling
+- Extract utilities from large modules
+- Organize by feature/domain, not by type
+
+## Coding Style
+
+For C software development, use this rule as the source of truth.
+If any external style guide conflicts with this rule, this rule takes precedence.
+
+### 1) Format
+
+- Must use exactly one tab character per indentation level.
+- Must not use spaces for indentation, spaces are allowed only for alignment.
+- Function opening brace must be on its own line.
+- `*` must bind to variable name, not type token. Examples: `int *ptr`, `char *name`.
+- Function parameters must follow same style.
+
+### 2) Header Guards
+
+- Must use all-uppercase macro names with underscores.
+- Must not start with a leading underscore.
+- Guard macro format: `PROJECT_PATH_FILENAME_H`.
+
+### 3) Naming
+- Variables and Functions: Must use lowercase with underscores: `table_name`, `add_table_entry()`.
+- Constants (macro constants): Must use all uppercase with underscores: `MAX_BUFFER_SIZE`.
+- Macros: Must use all uppercase with underscores: `MAX_BUFFER_SIZE`, `MIN(a, b)`.
+- Structures/Types: Must use lowercase with underscores, ending with _t: `url_table_t`.
+- Enums: Type names end with _t, values use all uppercase with underscores: `error_code_t`, `ERROR_NONE`.
+- Must use descriptive names, avoid abbreviations unless widely known.
+- Must not use single-letter names except for loop counters (i, j).
+
+### 4) Function Comments
+
+- Must document all non-trivial functions.
+- Must describe what the function does, parameters, return values, and side effects.
+- For public APIs, comments must be placed before declarations in header files.
+
+Example:
+
+```c
+/*
+ * Parses a URL string into its components.
+ *
+ * @param url: The URL string to parse (must not be NULL)
+ * @param result: Pointer to structure to store parsed result
+ * @return: 0 on success, -1 on error
+ *
+ * Note: Caller is responsible for freeing result->hostname
+ */
+int parse_url(const char *url, url_info_t *result);
+```
+
+## Formatting
+
+- Use **clang-format** — no style debates
+- Run `clang-format -i <file>` after modification or before committing
