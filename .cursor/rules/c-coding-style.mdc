@@ -6,26 +6,6 @@ alwaysApply: true
 
 # C Software Coding Style
 
-## Core Principles
-
-### KISS (Keep It Simple)
-
-- Prefer the simplest solution that actually works
-- Avoid premature optimization
-- Optimize for clarity over cleverness
-
-### DRY (Don't Repeat Yourself)
-
-- Extract repeated logic into shared functions or utilities
-- Avoid copy-paste implementation drift
-- Introduce abstractions when repetition is real, not speculative
-
-### YAGNI (You Aren't Gonna Need It)
-
-- Do not build features or abstractions before they are needed
-- Avoid speculative generality
-- Start simple, then refactor when the pressure is real
-
 ## File Organization
 
 MANY SMALL FILES > FEW LARGE FILES:

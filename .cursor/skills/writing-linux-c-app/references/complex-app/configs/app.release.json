@@ -1,0 +1,4 @@
+{
+	"interval_seconds": 5,
+	"zlog_config_path": "./zlog.ini"
+}
