@@ -9,7 +9,7 @@
 #   https://clang.llvm.org/docs/ClangFormatStyleOptions.html
 #
 ---
-Language: Cpp
+Language: C
 BasedOnStyle: Google
 
 # Indentation: Use Tab, do not use space indentation
@@ -32,7 +32,7 @@ BraceWrapping:
 # Pointer style: * close to variable name
 PointerAlignment: Right
 
-# Keep Google style
+# Based on Google, overridden by project C rule
 ColumnLimit: 80
 AllowShortFunctionsOnASingleLine: None
 AllowShortIfStatementsOnASingleLine: Never
