@@ -72,6 +72,7 @@ set(SOURCES
     src/network/ethernet.c
     src/network/wifi.c
     src/hardware/gpio.c
+    src/hardware/pwm.c
     src/third_party/mongoose/mongoose.c
 )
 

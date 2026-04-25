@@ -6,6 +6,7 @@
 #include <string.h>
 
 #include "../hardware/gpio.h"
+#include "../hardware/pwm.h"
 #include "../network/network_manager.h"
 #include "../system/cpu.h"
 #include "../system/datetime.h"
@@ -26,6 +27,16 @@
 #endif
 
 #define GPIO_HINT "Check pinctrl availability, pin ownership, and permissions."
+#define PWM_HINT                                                              \
+	"Check /sys/class/pwm/pwmchip0, pwm overlay, pinctrl gpio12/gpio13=a0, " \
+	"and permissions."
+#define PWM_DT_HINT                                                           \
+	"PWM is not enabled. Enable the PWM device-tree overlay and reboot."
+#define PWM_EXPORT_HINT                                                       \
+	"Failed to export PWM channels. Check /sys/class/pwm/pwmchip0/export "    \
+	"permissions and pwm overlay."
+#define PWM_MIN_FREQUENCY_HZ 1
+#define PWM_MAX_FREQUENCY_HZ 1000000
 static char *last_gpio_ws_json = NULL;
 static uint64_t last_gpio_ws_check_ms = 0;
 static char g_web_root[1024] = "./web";
@@ -430,6 +441,155 @@ static int uri_has_prefix(struct mg_str uri, const char *prefix)
 		return 0;
 	}
 	return memcmp(uri.buf, prefix, prefix_len) == 0;
+}
+
+static int parse_pwm_channel_from_uri(struct mg_str uri, const char *suffix)
+{
+	char uri_buf[128];
+	int channel = -1;
+	if (suffix == NULL || uri.len <= 0 || uri.len >= (int)sizeof(uri_buf)) {
+		return -1;
+	}
+	snprintf(uri_buf, sizeof(uri_buf), "%.*s", (int)uri.len, uri.buf);
+	if (sscanf(uri_buf, "/api/pwm/%d", &channel) != 1) {
+		return -1;
+	}
+	size_t uri_len = strlen(uri_buf);
+	size_t suffix_len = strlen(suffix);
+	if (uri_len < suffix_len) {
+		return -1;
+	}
+	if (strcmp(uri_buf + uri_len - suffix_len, suffix) != 0) {
+		return -1;
+	}
+	return channel;
+}
+
+static void handle_pwm_channels(struct mg_connection *c, struct mg_http_message *hm)
+{
+	if (!mg_match(hm->method, mg_str("GET"), NULL)) {
+		mg_http_reply(c, 405, "Content-Type: application/json\r\n",
+		              "{\"error\":\"Method not allowed\"}\n");
+		return;
+	}
+
+	int dt_ok = pwm_is_device_tree_okay();
+	if (dt_ok != 1) {
+		mg_http_reply(
+		    c, 503, "Content-Type: application/json\r\n",
+		    "{\"error\":\"PWM device-tree node is not okay\",\"hint\":\"%s\"}\n",
+		    PWM_DT_HINT);
+		return;
+	}
+
+	if (pwm_ensure_channels_exported() != 0) {
+		mg_http_reply(c, 503, "Content-Type: application/json\r\n",
+		              "{\"error\":\"PWM channels are not exported\",\"hint\":\"%s\"}\n",
+		              PWM_EXPORT_HINT);
+		return;
+	}
+
+	pwm_channel_status_t statuses[2];
+	if (pwm_get_channels_status(statuses, 2) != 0) {
+		mg_http_reply(c, 503, "Content-Type: application/json\r\n",
+		              "{\"error\":\"Failed to get PWM channels\",\"hint\":\"%s\"}\n",
+		              PWM_HINT);
+		return;
+	}
+
+	mg_http_reply(
+	    c, 200, "Content-Type: application/json\r\n",
+	    "[{\"channel\":%d,\"gpio\":%d,\"frequency_hz\":%d,\"duty_percent\":%d,"
+	    "\"enabled\":%d,\"exported\":%d,\"polarity\":\"%s\"},"
+	    "{\"channel\":%d,\"gpio\":%d,\"frequency_hz\":%d,\"duty_percent\":%d,"
+	    "\"enabled\":%d,\"exported\":%d,\"polarity\":\"%s\"}]\n",
+	    statuses[0].channel, statuses[0].gpio, statuses[0].frequency_hz,
+	    statuses[0].duty_percent, statuses[0].enabled, statuses[0].exported,
+	    statuses[0].polarity,
+	    statuses[1].channel, statuses[1].gpio, statuses[1].frequency_hz,
+	    statuses[1].duty_percent, statuses[1].enabled, statuses[1].exported,
+	    statuses[1].polarity);
+}
+
+static void handle_pwm_config(struct mg_connection *c, struct mg_http_message *hm)
+{
+	if (!mg_match(hm->method, mg_str("POST"), NULL)) {
+		mg_http_reply(c, 405, "Content-Type: application/json\r\n",
+		              "{\"error\":\"Method not allowed\"}\n");
+		return;
+	}
+
+	int channel = parse_pwm_channel_from_uri(hm->uri, "/config");
+	if (channel < 0 || channel > 1) {
+		mg_http_reply(c, 400, "Content-Type: application/json\r\n",
+		              "{\"error\":\"Invalid PWM channel\"}\n");
+		return;
+	}
+
+	int frequency_hz = (int)mg_json_get_long(hm->body, "$.frequency_hz", -1);
+	int duty_percent = (int)mg_json_get_long(hm->body, "$.duty_percent", -1);
+	char *polarity = mg_json_get_str(hm->body, "$.polarity");
+	int polarity_ok = (polarity != NULL) &&
+	                  (strcmp(polarity, "normal") == 0 ||
+	                   strcmp(polarity, "inversed") == 0);
+	if (frequency_hz < PWM_MIN_FREQUENCY_HZ ||
+	    frequency_hz > PWM_MAX_FREQUENCY_HZ || duty_percent < 1 ||
+	    duty_percent > 99 || !polarity_ok) {
+		mg_http_reply(c, 400, "Content-Type: application/json\r\n",
+		              "{\"error\":\"Invalid frequency_hz (1..1000000) or "
+	              "duty_percent (1..99) or polarity (normal/inversed)\"}\n");
+		if (polarity != NULL) {
+			free(polarity);
+		}
+		return;
+	}
+
+	if (pwm_apply_config(channel, frequency_hz, duty_percent, polarity) != 0) {
+		mg_http_reply(c, 503, "Content-Type: application/json\r\n",
+		              "{\"status\":\"error\",\"message\":\"Failed to apply PWM "
+		              "config\",\"hint\":\"%s\"}\n",
+		              PWM_HINT);
+		free(polarity);
+		return;
+	}
+	free(polarity);
+
+	mg_http_reply(c, 200, "Content-Type: application/json\r\n",
+	              "{\"status\":\"success\"}\n");
+}
+
+static void handle_pwm_enable(struct mg_connection *c, struct mg_http_message *hm)
+{
+	if (!mg_match(hm->method, mg_str("POST"), NULL)) {
+		mg_http_reply(c, 405, "Content-Type: application/json\r\n",
+		              "{\"error\":\"Method not allowed\"}\n");
+		return;
+	}
+
+	int channel = parse_pwm_channel_from_uri(hm->uri, "/enable");
+	if (channel < 0 || channel > 1) {
+		mg_http_reply(c, 400, "Content-Type: application/json\r\n",
+		              "{\"error\":\"Invalid PWM channel\"}\n");
+		return;
+	}
+
+	int enable = (int)mg_json_get_long(hm->body, "$.enable", -1);
+	if (enable != 0 && enable != 1) {
+		mg_http_reply(c, 400, "Content-Type: application/json\r\n",
+		              "{\"error\":\"Invalid enable value, must be 0 or 1\"}\n");
+		return;
+	}
+
+	if (pwm_set_enable(channel, enable) != 0) {
+		mg_http_reply(c, 503, "Content-Type: application/json\r\n",
+		              "{\"status\":\"error\",\"message\":\"Failed to set PWM "
+		              "enable\",\"hint\":\"%s\"}\n",
+		              PWM_HINT);
+		return;
+	}
+
+	mg_http_reply(c, 200, "Content-Type: application/json\r\n",
+	              "{\"status\":\"success\"}\n");
 }
 
 static int has_gpio_ws_clients(struct mg_mgr *mgr)
@@ -935,6 +1095,20 @@ void router_handle_request(struct mg_connection *c, struct mg_http_message *hm)
 	// GPIO 状态 API
 	else if (mg_match(hm->uri, mg_str("/api/gpio/status"), NULL)) {
 		handle_gpio_status(c, hm);
+	}
+	// PWM 通道状态 API
+	else if (mg_match(hm->uri, mg_str("/api/pwm/channels"), NULL)) {
+		handle_pwm_channels(c, hm);
+	}
+	// PWM 参数配置 API (例如 /api/pwm/0/config)
+	else if (uri_has_prefix(hm->uri, "/api/pwm/") &&
+	         uri_has_suffix(hm->uri, "/config")) {
+		handle_pwm_config(c, hm);
+	}
+	// PWM 开关 API (例如 /api/pwm/0/enable)
+	else if (uri_has_prefix(hm->uri, "/api/pwm/") &&
+	         uri_has_suffix(hm->uri, "/enable")) {
+		handle_pwm_enable(c, hm);
 	}
 	// GPIO 模式 API (例如 /api/gpio/17/mode)
 	else if (uri_has_prefix(hm->uri, "/api/gpio/") &&

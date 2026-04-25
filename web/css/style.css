@@ -776,6 +776,62 @@ body {
     color: var(--color-text-secondary);
 }
 
+.pwm-card .form-field {
+	margin-bottom: 12px;
+}
+
+/* PWM 数值输入仅允许键盘输入，隐藏浏览器步进按钮 */
+#page-pwm input[type=number]::-webkit-outer-spin-button,
+#page-pwm input[type=number]::-webkit-inner-spin-button {
+	-webkit-appearance: none;
+	margin: 0;
+}
+
+#page-pwm input[type=number] {
+	-moz-appearance: textfield;
+	appearance: textfield;
+}
+
+.pwm-status-row {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	margin: 8px 0 12px;
+}
+
+.pwm-status-chip {
+	display: inline-flex;
+	align-items: center;
+	border: 1px solid var(--color-border);
+	border-radius: 999px;
+	padding: 4px 10px;
+	font-size: 12px;
+	color: var(--color-text-secondary);
+	background: rgba(var(--color-bg-rgb), 0.75);
+}
+
+.pwm-status-chip.is-on {
+	border-color: rgba(var(--color-success-rgb), 0.8);
+	color: var(--color-success);
+}
+
+.pwm-meta {
+	font-size: 12px;
+	color: var(--color-text-secondary);
+}
+
+.pwm-actions {
+	display: flex;
+	gap: 8px;
+	flex-wrap: wrap;
+}
+
+.pwm-actions .btn {
+	min-width: 120px;
+	justify-content: center;
+}
+
 .legend-color.power { background: #ef4444; }
 .legend-color.ground { background: #6b7280; }
 .legend-color.gpio { background: #eab308; }
