@@ -244,6 +244,12 @@ device  export  npwm  power  pwm0  subsystem  uevent  unexport
 ~ $ echo 50000000 | sudo tee /sys/class/pwm/pwmchip0/pwm0/duty_cycle
 50000000
 
+## 设置极性（normal 正向，inversed 反向）
+~ $ cat /sys/class/pwm/pwmchip0/pwm0/polarity
+normal
+~ $ echo inversed  | sudo tee /sys/class/pwm/pwmchip0/pwm0/polarity
+inversed
+
 # 启用 PWM
 ~ $ echo 1 | sudo tee /sys/class/pwm/pwmchip0/pwm0/enable
 1

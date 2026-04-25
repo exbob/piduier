@@ -9,7 +9,7 @@
 #   https://clang.llvm.org/docs/ClangFormatStyleOptions.html
 #
 ---
-Language: C
+Language: Cpp
 BasedOnStyle: Google
 
 # Indentation: Use Tab, do not use space indentation
