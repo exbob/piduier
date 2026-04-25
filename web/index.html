@@ -74,10 +74,10 @@
                     </a>
                     <ul class="menu-sub">
                         <li><a href="#" class="menu-link" data-page="gpio">GPIO</a></li>
+                        <li><a href="#" class="menu-link" data-page="pwm">PWM</a></li>
                         <li><a href="#" class="menu-link" data-page="uart">UART</a></li>
                         <li><a href="#" class="menu-link" data-page="spi">SPI</a></li>
                         <li><a href="#" class="menu-link" data-page="i2c">I2C</a></li>
-                        <li><a href="#" class="menu-link" data-page="pwm">PWM</a></li>
                     </ul>
                 </li>
                 <li class="menu-item">
@@ -436,11 +436,66 @@
             </div>
 
             <div id="page-pwm" class="page">
-                <h1 class="page-title">PWM Control</h1>
-                <div class="card">
-                    <div class="card-title">In Development...</div>
-                    <div class="card-content">
-                        <p class="pending-text">PWM control features are under development.</p>
+                <div class="page-header">
+                    <h1 class="page-title">PWM</h1>
+                    <div class="section-note">Configure frequency, duty cycle, and output state for GPIO12/GPIO13 PWM channels</div>
+                </div>
+                <div class="grid grid-2">
+                    <div class="card pwm-card" id="pwm-card-0">
+                        <div class="card-title">PWM Channel 0 (GPIO12)</div>
+                        <div class="card-content">
+                            <div class="form-field">
+                                <label class="form-label" for="pwm-frequency-0">Frequency (Hz, 1~1000000)</label>
+                                <input class="input-field" id="pwm-frequency-0" type="number" min="1" max="1000000" step="1" value="100">
+                            </div>
+                            <div class="form-field">
+                                <label class="form-label" for="pwm-duty-0">Duty Cycle (%, 1~99)</label>
+                                <input class="input-field" id="pwm-duty-0" type="number" min="1" max="99" step="1" value="50">
+                            </div>
+                            <div class="form-field">
+                                <label class="form-label" for="pwm-polarity-0">Polarity</label>
+                                <select class="input-field" id="pwm-polarity-0">
+                                    <option value="normal">normal</option>
+                                    <option value="inversed">inversed</option>
+                                </select>
+                            </div>
+                            <div class="pwm-status-row">
+                                <span class="pwm-status-chip" id="pwm-status-0">Disabled</span>
+                                <span class="pwm-meta" id="pwm-meta-0">-- Hz / --%</span>
+                            </div>
+                            <div class="pwm-actions">
+                                <button class="btn btn-primary" id="pwm-apply-0">Apply</button>
+                                <button class="btn btn-secondary" id="pwm-enable-0" data-enable="0">Output On</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card pwm-card" id="pwm-card-1">
+                        <div class="card-title">PWM Channel 1 (GPIO13)</div>
+                        <div class="card-content">
+                            <div class="form-field">
+                                <label class="form-label" for="pwm-frequency-1">Frequency (Hz, 1~1000000)</label>
+                                <input class="input-field" id="pwm-frequency-1" type="number" min="1" max="1000000" step="1" value="100">
+                            </div>
+                            <div class="form-field">
+                                <label class="form-label" for="pwm-duty-1">Duty Cycle (%, 1~99)</label>
+                                <input class="input-field" id="pwm-duty-1" type="number" min="1" max="99" step="1" value="50">
+                            </div>
+                            <div class="form-field">
+                                <label class="form-label" for="pwm-polarity-1">Polarity</label>
+                                <select class="input-field" id="pwm-polarity-1">
+                                    <option value="normal">normal</option>
+                                    <option value="inversed">inversed</option>
+                                </select>
+                            </div>
+                            <div class="pwm-status-row">
+                                <span class="pwm-status-chip" id="pwm-status-1">Disabled</span>
+                                <span class="pwm-meta" id="pwm-meta-1">-- Hz / --%</span>
+                            </div>
+                            <div class="pwm-actions">
+                                <button class="btn btn-primary" id="pwm-apply-1">Apply</button>
+                                <button class="btn btn-secondary" id="pwm-enable-1" data-enable="0">Output On</button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

@@ -2,15 +2,23 @@
 
 // API 基础 URL
 const API_BASE = '';
+const PWM_MIN_FREQUENCY_HZ = 1;
+const PWM_MAX_FREQUENCY_HZ = 1000000;
 const PRODUCT_TAGLINE = 'Raspberry Pi 5 40-pin interface debugging platform';
 
 // 当前活动页面
 let currentPage = 'dashboard';
 let gpioPollInterval = null;
+let pwmPollInterval = null;
 let lastGpioErrorAt = 0;
 let gpioSocket = null;
 let currentAttrGpio = null;
 let gpioStatusCache = {};
+let pwmStatusCache = {};
+const pwmInputDirty = {
+    0: { frequency: false, duty: false, polarity: false },
+    1: { frequency: false, duty: false, polarity: false }
+};
 
 // 初始化应用
 document.addEventListener('DOMContentLoaded', () => {
@@ -53,6 +61,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // GPIO 配置页面初始化
     initGpioPage();
+    initPwmPage();
 });
 
 // 初始化菜单
@@ -209,12 +218,15 @@ function switchPage(page) {
     
     currentPage = page;
     updateGpioPollingState();
+    updatePwmPollingState();
     
     // 根据页面加载数据
     if (page === 'dashboard') {
         loadDashboard();
     } else if (page === 'gpio') {
         loadGpioStatus();
+    } else if (page === 'pwm') {
+        loadPwmChannels();
     }
 }
 
@@ -242,6 +254,21 @@ function updateGpioPollingState() {
     if (!shouldPoll && gpioPollInterval) {
         clearInterval(gpioPollInterval);
         gpioPollInterval = null;
+    }
+}
+
+function updatePwmPollingState() {
+    const shouldPoll = currentPage === 'pwm';
+    if (shouldPoll && !pwmPollInterval) {
+        pwmPollInterval = setInterval(() => {
+            if (currentPage === 'pwm') {
+                loadPwmChannels();
+            }
+        }, 2000);
+    }
+    if (!shouldPoll && pwmPollInterval) {
+        clearInterval(pwmPollInterval);
+        pwmPollInterval = null;
     }
 }
 
@@ -1301,5 +1328,177 @@ async function saveGpioConfig() {
         setTimeout(loadGpioStatus, 500);
     } catch (error) {
         showMessage('Failed to save GPIO configuration: ' + error.message, 'error');
+    }
+}
+
+// ==================== PWM 控制功能 ====================
+
+function initPwmPage() {
+    const channels = [0, 1];
+    channels.forEach((channel) => {
+        const applyBtn = document.getElementById(`pwm-apply-${channel}`);
+        const enableBtn = document.getElementById(`pwm-enable-${channel}`);
+        const frequencyInput = document.getElementById(`pwm-frequency-${channel}`);
+        const dutyInput = document.getElementById(`pwm-duty-${channel}`);
+        const polarityInput = document.getElementById(`pwm-polarity-${channel}`);
+
+        if (frequencyInput) {
+            frequencyInput.addEventListener('input', () => {
+                pwmInputDirty[channel].frequency = true;
+            });
+        }
+        if (dutyInput) {
+            dutyInput.addEventListener('input', () => {
+                pwmInputDirty[channel].duty = true;
+            });
+        }
+        if (polarityInput) {
+            polarityInput.addEventListener('change', () => {
+                pwmInputDirty[channel].polarity = true;
+            });
+        }
+
+        if (applyBtn) {
+            applyBtn.addEventListener('click', () => applyPwmConfig(channel));
+        }
+        if (enableBtn) {
+            enableBtn.addEventListener('click', () => {
+                const currentEnable = Number(enableBtn.dataset.enable || '0');
+                const targetEnable = currentEnable === 1 ? 0 : 1;
+                togglePwmEnable(channel, targetEnable);
+            });
+        }
+    });
+}
+
+function parsePwmInteger(value) {
+    const text = String(value ?? '').trim();
+    if (!/^\d+$/.test(text)) {
+        return null;
+    }
+    return Number(text);
+}
+
+function renderPwmChannel(channel, data) {
+    const frequencyInput = document.getElementById(`pwm-frequency-${channel}`);
+    const dutyInput = document.getElementById(`pwm-duty-${channel}`);
+    const polarityInput = document.getElementById(`pwm-polarity-${channel}`);
+    const statusChip = document.getElementById(`pwm-status-${channel}`);
+    const meta = document.getElementById(`pwm-meta-${channel}`);
+    const enableBtn = document.getElementById(`pwm-enable-${channel}`);
+    if (!frequencyInput || !dutyInput || !polarityInput || !statusChip || !meta || !enableBtn) {
+        return;
+    }
+
+    if (!pwmInputDirty[channel].frequency && data.frequency_hz > 0) {
+        frequencyInput.value = String(data.frequency_hz);
+    }
+    if (!pwmInputDirty[channel].duty &&
+        Number.isInteger(data.duty_percent) &&
+        data.duty_percent >= 1 &&
+        data.duty_percent <= 99) {
+        dutyInput.value = String(data.duty_percent);
+    }
+    const polarity = data.polarity === 'inversed' ? 'inversed' : 'normal';
+    if (!pwmInputDirty[channel].polarity) {
+        polarityInput.value = polarity;
+    }
+
+    const enabled = Number(data.enabled) === 1;
+    statusChip.textContent = enabled ? 'Enabled' : 'Disabled';
+    statusChip.classList.toggle('is-on', enabled);
+    meta.textContent = `${data.frequency_hz || 0} Hz / ${data.duty_percent || 0}% / ${polarity}`;
+    enableBtn.dataset.enable = enabled ? '1' : '0';
+    enableBtn.textContent = enabled ? 'Output Off' : 'Output On';
+    enableBtn.classList.toggle('btn-primary', enabled);
+    enableBtn.classList.toggle('btn-secondary', !enabled);
+}
+
+async function loadPwmChannels() {
+    try {
+        const response = await fetch(`${API_BASE}/api/pwm/channels`);
+        if (!response.ok) {
+            const message = await parseErrorMessage(response, 'Failed to load PWM channels');
+            throw new Error(message);
+        }
+        const channels = await response.json();
+        if (!Array.isArray(channels)) {
+            throw new Error('PWM payload is not an array');
+        }
+
+        channels.forEach((item) => {
+            if (item.channel === 0 || item.channel === 1) {
+                pwmStatusCache[item.channel] = item;
+                renderPwmChannel(item.channel, item);
+            }
+        });
+    } catch (error) {
+        showMessage(`Failed to load PWM channels: ${error.message}`, 'error');
+    }
+}
+
+async function applyPwmConfig(channel) {
+    const frequencyInput = document.getElementById(`pwm-frequency-${channel}`);
+    const dutyInput = document.getElementById(`pwm-duty-${channel}`);
+    const polarityInput = document.getElementById(`pwm-polarity-${channel}`);
+    if (!frequencyInput || !dutyInput || !polarityInput) {
+        return;
+    }
+
+    const frequencyHz = parsePwmInteger(frequencyInput.value);
+    const dutyPercent = parsePwmInteger(dutyInput.value);
+    if (frequencyHz === null || frequencyHz < PWM_MIN_FREQUENCY_HZ || frequencyHz > PWM_MAX_FREQUENCY_HZ) {
+        showMessage('Frequency must be an integer between 1 and 1000000', 'error');
+        return;
+    }
+    if (dutyPercent === null || dutyPercent < 1 || dutyPercent > 99) {
+        showMessage('Duty cycle must be an integer between 1 and 99', 'error');
+        return;
+    }
+    const polarity = polarityInput.value;
+    if (polarity !== 'normal' && polarity !== 'inversed') {
+        showMessage('Polarity must be normal or inversed', 'error');
+        return;
+    }
+
+    try {
+        const response = await fetch(`${API_BASE}/api/pwm/${channel}/config`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                frequency_hz: frequencyHz,
+                duty_percent: dutyPercent,
+                polarity
+            })
+        });
+        if (!response.ok) {
+            const message = await parseErrorMessage(response, 'Failed to apply PWM config');
+            throw new Error(message);
+        }
+        pwmInputDirty[channel].frequency = false;
+        pwmInputDirty[channel].duty = false;
+        pwmInputDirty[channel].polarity = false;
+        showMessage(`PWM${channel} config applied`, 'success');
+        await loadPwmChannels();
+    } catch (error) {
+        showMessage(`Failed to apply PWM config: ${error.message}`, 'error');
+    }
+}
+
+async function togglePwmEnable(channel, enable) {
+    try {
+        const response = await fetch(`${API_BASE}/api/pwm/${channel}/enable`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ enable })
+        });
+        if (!response.ok) {
+            const message = await parseErrorMessage(response, 'Failed to toggle PWM output');
+            throw new Error(message);
+        }
+        showMessage(`PWM${channel} output ${enable === 1 ? 'enabled' : 'disabled'}`, 'success');
+        await loadPwmChannels();
+    } catch (error) {
+        showMessage(`Failed to toggle PWM output: ${error.message}`, 'error');
     }
 }
