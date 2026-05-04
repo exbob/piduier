@@ -73,6 +73,18 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 - **Higher levels** (e.g. WARN/ERROR): production-oriented signals—failures, unexpected branches, dependency errors—what on-call needs under default retention and sampling.
 - Follow the project's logger, level names, and baseline policy; assign levels by **audience** (dev vs ops), not at random. No secrets or unnecessary PII.
 
+## 6. Data Structures Before Code
+
+**Bad programmers worry about code. Good programmers worry about data structures and their relationships.**
+
+Before implementing, model the system first:
+- Identify the core entities and their boundaries.
+- Define relationships and constraints explicitly (ownership, cardinality, lifecycle, invariants).
+- Validate read/write access patterns (query paths, mutation frequency, consistency needs).
+- Choose representations that fit those patterns; let code structure follow the model.
+
+If implementation feels complex, first re-check the data model. Most accidental complexity comes from mismatched structures, not missing syntax tricks.
+
 ---
 
 **These guidelines are working if:** fewer unnecessary changes in diffs, fewer rewrites due to overcomplication, clarifying questions come before implementation rather than after mistakes, and new behavior is observable through **correctly leveled** logs.
